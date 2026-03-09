@@ -1398,7 +1398,7 @@ select:focus {
     opacity: 0.22;
 }
 
-.loading-state {
+.loadinge {
     display: flex;
     flex-direction: column;
     align-items: center;
