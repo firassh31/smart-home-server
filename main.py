@@ -1,7 +1,10 @@
+import os
 from flask import Flask, render_template
 from routes.device_routes import device_bp
 from helper import DeviceManager
 from patterns import Observer
+from dotenv import load_dotenv
+load_dotenv()
 
 # Define External Services (Observers) 
 class MobileAppService(Observer):
@@ -27,8 +30,13 @@ def home():
 
 #  Application Bootstrap
 if __name__ == '__main__':
-    print("\n🚀 Booting up Smart Home API Server...")
+    #Read the environment variable. If it's completely missing, default to 'False' for safety!
+    env_debug = os.getenv('FLASK_DEBUG', 'False')
     
+    is_debug_mode = env_debug.lower() in ['true', '1', 't']
+
+    print(f"\n[SYSTEM] Booting MSHome Server...")
+    print(f"[SYSTEM] Debug Mode Active: {is_debug_mode}\n")
     # Initialize the Singleton Manager
     manager = DeviceManager()
     
@@ -39,4 +47,4 @@ if __name__ == '__main__':
     
     # Start the server
     print("🌐 Server running on http://127.0.0.1:5000")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=is_debug_mode)
