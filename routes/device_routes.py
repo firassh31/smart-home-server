@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from helper import DeviceManager  # Import the Manager instead of the DB
+from extensions import limiter # Import the limiter from extensions.py
 
 device_bp = Blueprint('device_bp', __name__)
 manager = DeviceManager()  # Instantiate the Manager
@@ -82,6 +83,7 @@ def update_device_details(device_id):
 
 # This new route allows the frontend to update ON/OFF settings of a device without changing its name or room. The Manager will handle the logic of updating the database and notifying any observers about the change.
 @device_bp.route('/<device_id>/status', methods=['PUT'])
+@limiter.limit("5 per minute")
 def update_status(device_id):
     #Professional Standard: Enforce correct HTTP Headers
     if not request.is_json:

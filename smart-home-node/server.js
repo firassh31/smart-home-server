@@ -1,14 +1,14 @@
 require('dotenv').config();
-const express = require('express');
-const { MongoClient, ObjectId } = require('mongodb'); // הוספנו את ObjectId
-const cors = require('cors');
+import express, { json } from 'express';
+import { MongoClient, ObjectId } from 'mongodb'; // הוספנו את ObjectId
+import cors from 'cors';
 
 const app = express();
 const port = 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(json());
 
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
@@ -19,7 +19,7 @@ async function run() {
         console.log("✅ Connected to MongoDB");
 
         const db = client.db("SmartHomeDB");
-        const devicesCollection = db.collection("devices"); 
+        const devicesCollection = db.collection("devices");
 
         app.get('/devices', async (req, res) => {
             const devices = await devicesCollection.find({}).toArray();

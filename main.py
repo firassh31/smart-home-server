@@ -4,6 +4,7 @@ from routes.device_routes import device_bp
 from helper import DeviceManager
 from patterns import Observer
 from dotenv import load_dotenv
+from extensions import limiter
 load_dotenv()
 
 # Define External Services (Observers) 
@@ -18,12 +19,15 @@ class MobileAppService(Observer):
 
 # Initialize the Web Server 
 app = Flask(__name__)
+# Initialize the rate limiter with the Flask app
+limiter.init_app(app)
 
 # Register the API Blueprint for all /devices routes
 app.register_blueprint(device_bp, url_prefix='/devices')
 
 # Frontend Route
 @app.route('/')
+@limiter.limit("30 per minute")
 def home():
     return render_template('index.html')
 
