@@ -74,3 +74,11 @@ The server will start running on http://127.0.0.1:5000. You can now open your fr
 | **POST** | `/devices/` | Creates a new smart device in the database. |
 | **PUT** | `/devices/<id>/status` | Toggles the operational status (on/off) of a specific device. |
 | **DELETE** | `/devices/<id>` | Permanently removes a device using its MongoDB ObjectId. |
+
+
+## Future Architecture Map 
+This project is currently transitioning into an Event-Driven Architecture.
+
+* **Core API (Python/Flask):** Handles REST endpoints, MongoDB connections, data validation, and security.
+* **Real-Time Hub (Node.js):** Located in `smart-home-node/`. Future integration for WebSockets (Socket.io) to push instant UI updates and handle MQTT protocol for physical IoT hardware.
+* **Message Broker:** Future integration of Redis to allow Python and Node.js to publish/subscribe to smart home events.
