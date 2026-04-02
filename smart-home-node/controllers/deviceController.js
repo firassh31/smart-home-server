@@ -71,7 +71,7 @@ export const addDevice = async (req, res) => {
         } else if (deviceType === 'ac') {
             defaultState = { temperature: 22 };
         } else if (deviceType === 'doorlock') {
-            defaultState = { is_locked: true };
+            defaultState = { is_locked: false };
         }
         const newDevice = {
             name: name,
@@ -137,7 +137,7 @@ export const updateDeviceState = async (req, res) => {
     try {
         const db = await getDB();
         const { id } = req.params;
-        const stateUpdates = req.body; // Grabs { state.brightness: 50 } or { state.temperature: 22 }
+        const stateUpdates = req.body; // Grabs { state.brightness: 50 } or { state.temperature: 22 } or { state.is_locked: true }
         const formattedUpdates = {};
         for (const key in stateUpdates) {
             formattedUpdates[`state.${key}`] = stateUpdates[key];

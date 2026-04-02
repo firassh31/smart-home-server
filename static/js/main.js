@@ -296,12 +296,8 @@ const openDeviceControl = id => {
     } else if (d.type === 'ac') {
         el.tempDisplay.textContent = (d.state?.temperature || 22) + '°C';
     } else if (d.type === 'doorlock') {
-        // Assume true (locked) if it's a new device without data
-        const isLocked = d.state?.is_locked !== false;
-
-        // Update the text
+        const isLocked = d.state?.is_locked == false; // Default to locked if state is missing
         el.unlockBtn.textContent = isLocked ? 'Unlock Door' : 'Lock Door';
-        const panelFooter = document.querySelector('.panel-footer');
         if (isLocked) {
             el.unlockBtn.classList.remove('danger-btn');
             el.unlockBtn.classList.add('btn-on'); // Safe = Green
@@ -330,11 +326,30 @@ const closeDeviceControl = () => {
     el.controlPanel.classList.remove('active');
     activeControlDevice = null;
 };
+// Separate functions for status vs state updates since status is optimistic toggle but state is debounced and can have multiple fields
+const updateDeviceStatus = async newStatus => {
+    if (!activeControlDevice) return;
+    try {
+        const res = await fetch(API_URL + '/' + activeControlDevice.id + '/status', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            const i = devices.findIndex(d => d.id === updated.id);
+            if (i !== -1) devices[i] = updated;
+        }
+    } catch {
+        showToast('Network error', 'error');
+    }
+};
 
 /* State update (debounced for sliders/temp) ───*/
 const updateDeviceState = async stateUpdates => {
     if (!activeControlDevice) return;
     try {
+        console.log('Updating device state with:', stateUpdates);
         const res = await fetch(API_URL + '/' + activeControlDevice.id + '/state', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -436,14 +451,16 @@ const setupListeners = () => {
     document.getElementById('temp-plus').addEventListener('click', () => adjustTemp(+1));
 
     /* Door lock */
-    document.getElementById('unlock-btn').addEventListener('click', (e) => {
+    document.getElementById('unlock-btn').addEventListener('click', e => {
         if (!activeControlDevice) return;
 
+        // Use optional chaining (?.) just in case the state folder is completely empty
         const isCurrentlyLocked = activeControlDevice.state?.is_locked !== false;
         const newLockedState = !isCurrentlyLocked;
         const newStatus = newLockedState ? 'on' : 'off';
 
         // Update local state
+        if (!activeControlDevice.state) activeControlDevice.state = {};
         activeControlDevice.state.is_locked = newLockedState;
         activeControlDevice.status = newStatus;
 
@@ -467,11 +484,9 @@ const setupListeners = () => {
             cardToggleBtn.dataset.status = newStatus;
         }
 
-        // Sends BOTH updates to the database!
-        updateDeviceState({
-            is_locked: newLockedState,
-            status: newStatus
-        });
+        // ✅ Sends BOTH updates to the database cleanly!
+        updateDeviceState({ is_locked: newLockedState });
+        updateDeviceStatus(newStatus);
 
         showToast(newLockedState ? 'Door Locked 🔒' : 'Door Unlocked 🔓', 'info');
     });
