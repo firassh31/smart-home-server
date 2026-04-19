@@ -1,4 +1,9 @@
-/* FONTS */
+/**
+ * MSHome — global styles
+ * Structure: tokens → reset → layout → components → modals → device panel → states
+ */
+
+/* ——— Fonts ——— */
 @font-face {
     font-family: 'Inter';
     src: url('../fonts/Inter_18pt-Regular.ttf') format('truetype');
@@ -13,7 +18,7 @@
     font-style: normal;
 }
 
-/* DESIGN TOKENS */
+/* ——— Design tokens ——— */
 :root {
     --bg-main: #FFFFFF;
     --bg-page: #F4F2EF;
@@ -50,7 +55,7 @@
     --navbar-h: 64px;
 }
 
-/* RESET */
+/* ——— Reset ——— */
 *,
 *::before,
 *::after {
@@ -88,7 +93,7 @@ a {
     text-decoration: none;
 }
 
-/* RESPONSIVE HELPERS */
+/* ——— Responsive helpers ——— */
 .mobile-only {
     display: flex !important;
 }
@@ -107,7 +112,7 @@ a {
     }
 }
 
-/* DESKTOP NAVBAR */
+/* ——— Desktop navbar ——— */
 .desktop-navbar {
     display: none;
     position: fixed;
@@ -175,10 +180,7 @@ a {
     display: flex;
     align-items: center;
     gap: 4px;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -209,10 +211,7 @@ a {
     align-items: center;
     gap: var(--sp-md);
     flex-shrink: 0;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -231,15 +230,12 @@ a {
     background: rgba(166, 79, 60, 0.05);
 }
 
-/* DESKTOP HERO STRIP */
+/* ——— Desktop hero ——— */
 .desktop-hero {
     background: linear-gradient(135deg, var(--accent-on) 0%, #4E6310 100%);
     padding: var(--sp-xl) 0;
     margin-top: var(--navbar-h);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -311,10 +307,7 @@ a {
     transition: filter var(--ease-fast), transform var(--ease-fast);
     box-shadow: var(--shadow-sm);
     white-space: nowrap;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -327,7 +320,7 @@ a {
     transform: scale(0.97);
 }
 
-/* APP SHELL */
+/* ——— App shell ——— */
 .app-shell {
     max-width: 480px;
     margin: 0 auto;
@@ -341,7 +334,7 @@ a {
     }
 }
 
-/* MOBILE HEADER */
+/* ——— Mobile header ——— */
 .main-header {
     position: sticky;
     top: 0;
@@ -349,10 +342,7 @@ a {
     background: #fff;
     border-bottom: 1px solid rgba(0, 0, 0, 0.07);
     padding: 14px var(--sp-lg);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -412,10 +402,7 @@ a {
     font: 700 0.76rem var(--font-base);
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(52, 64, 10, 0.22);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -470,10 +457,7 @@ a {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -504,10 +488,7 @@ a {
     transition: all var(--ease-fast);
     box-shadow: var(--shadow-sm);
     flex-shrink: 0;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -524,14 +505,15 @@ a {
     box-shadow: 0 4px 12px rgba(107, 176, 191, 0.35);
 }
 
-/* 
-   DEVICE GRID
-   Mobile: 2 cols | Desktop: 4 cols
-*/
+/* ——— Device grid (2 cols mobile, 4 desktop) ——— */
 .device-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: var(--sp-md);
+}
+
+.device-grid__full {
+    grid-column: 1 / -1;
 }
 
 @media (min-width: 900px) {
@@ -555,10 +537,7 @@ a {
     cursor: pointer;
     transition: transform var(--ease-fast), box-shadow var(--ease-fast);
     overflow: visible;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -745,10 +724,7 @@ a {
     box-shadow: var(--shadow-float);
     transition: transform var(--ease-fast);
     z-index: 200;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -998,10 +974,7 @@ select:focus {
     border-radius: var(--br-md);
     font: 700 0.92rem var(--font-heading);
     transition: all var(--ease-fast);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1150,10 +1123,7 @@ select:focus {
     font: 700 0.92rem var(--font-heading);
     padding: 8px 0;
     transition: opacity var(--ease-fast);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -1229,10 +1199,7 @@ select:focus {
     cursor: pointer;
     /* sliders must be interactive */
     pointer-events: auto !important;
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -1260,32 +1227,30 @@ select:focus {
     color: var(--text-secondary);
 }
 
-/* --- Preset Buttons --- */
+/* Brightness presets (tokens only) */
 .preset-container {
     display: flex;
-    gap: 8px;
-    margin-top: 15px;
+    gap: var(--sp-sm);
+    margin-top: var(--sp-md);
 }
 
 .preset-btn {
     flex: 1;
     padding: 8px 0;
-    border: 1px solid var(--border-color, #e2e8f0);
-    background: var(--surface-color, #ffffff);
-    color: var(--text-color, #333333);
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--br-sm);
+    background: var(--bg-main);
+    color: var(--text-primary);
+    font: 600 0.85rem var(--font-base);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background var(--ease-fast), color var(--ease-fast), border-color var(--ease-fast);
 }
 
 .preset-btn:hover,
 .preset-btn:active {
-    background: var(--primary-color, #007bff);
-    /* Uses your existing blue */
-    color: white;
-    border-color: var(--primary-color, #007bff);
+    background: var(--accent-secondary);
+    color: #fff;
+    border-color: var(--accent-secondary);
 }
 
 .temp-display {
@@ -1293,10 +1258,7 @@ select:focus {
     font-family: var(--font-heading);
     margin: 0;
     color: var(--text-secondary);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -1331,8 +1293,12 @@ select:focus {
     margin: 14px auto 0;
     border-radius: 50%;
     position: relative;
-    background: linear-gradient(180deg, rgba(107, 176, 191, 0.16) 0%, rgba(244, 242, 239, 0.20) 100%);
-    border: var(--dial-border) solid rgba(255, 255, 255, 0.92);
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--accent-secondary) 18%, transparent),
+        color-mix(in srgb, var(--bg-page) 40%, transparent)
+    );
+    border: var(--dial-border) solid color-mix(in srgb, var(--bg-main) 92%, transparent);
     box-shadow: var(--shadow-sm);
     user-select: none;
     touch-action: none;
@@ -1463,19 +1429,17 @@ select:focus {
     background: var(--text-secondary);
 }
 
-/* EMPTY / LOADING STATES */
-.empty-state {
+/* ——— Empty & loading (grid full-width via .device-grid__full) ——— */
+.empty-state,
+.loading-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 60px 20px;
+    gap: var(--sp-md);
     color: var(--text-secondary);
     text-align: center;
-    gap: var(--sp-md);
-    /* Disable text selection across all browsers (Safari, Firefox, IE/Edge, Standard) */
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
     user-select: none;
 }
 
@@ -1484,13 +1448,9 @@ select:focus {
     opacity: 0.22;
 }
 
-.loadinge {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 60px 20px;
-    gap: var(--sp-md);
-    color: var(--text-secondary);
+.empty-panel-icon {
+    font-size: 2.5rem;
+    line-height: 1;
 }
 
 .loading-spinner {

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -9,12 +9,10 @@
 </head>
 
 <body>
-
-    <!--  MOBILE SIDEBAR OVERLAY  -->
+    <!-- Mobile: dim background when sidebar open -->
     <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-    <!--  MOBILE SIDEBAR  -->
-    <aside id="sidebar" class="sidebar">
+    <aside id="sidebar" class="sidebar" aria-label="Main menu">
         <div class="sidebar-header">
             <div class="sidebar-logo">
                 <span class="sidebar-logo-icon">🏠</span>
@@ -30,7 +28,6 @@
         <div class="sidebar-footer">MSHome v1.0</div>
     </aside>
 
-    <!--  DESKTOP TOP NAVBAR  -->
     <header class="desktop-navbar">
         <div class="desktop-navbar-inner">
             <div class="navbar-brand">
@@ -54,10 +51,7 @@
         </div>
     </header>
 
-    <!--  APP SHELL  -->
     <div class="app-shell">
-
-        <!-- Mobile Header -->
         <header class="main-header mobile-only">
             <div class="header-content">
                 <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">
@@ -76,7 +70,6 @@
             </div>
         </header>
 
-        <!-- Desktop Hero Strip -->
         <div class="desktop-hero desktop-only">
             <div class="desktop-hero-inner">
                 <div class="hero-text">
@@ -100,7 +93,6 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <main class="content-wrapper">
             <div class="room-nav-row">
                 <div id="room-nav" class="room-nav-container"></div>
@@ -110,21 +102,16 @@
                 <h2 class="section-title">Devices</h2>
             </div>
             <div id="deviceList" class="device-grid">
-                <div class="loading-state" style="grid-column:1/-1">
-                    <div class="loading-spinner"></div>
+                <div class="loading-state device-grid__full">
+                    <div class="loading-spinner" aria-hidden="true"></div>
                     <p>Loading devices…</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Mobile FAB -->
-    <button class="fab-btn mobile-only" onclick="openAddModal()" aria-label="Add device">+</button>
-
-    <!-- Toast -->
-    <div id="toast-container"></div>
-
-    <!--  DELETE MODAL  -->
+    <button type="button" class="fab-btn mobile-only" onclick="openAddModal()" aria-label="Add device">+</button>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
     <div id="deleteModal" class="modal" role="dialog" aria-modal="true">
         <div class="modal-backdrop" onclick="closeModal()"></div>
         <div class="modal-content">
@@ -138,7 +125,6 @@
         </div>
     </div>
 
-    <!--  ADD / EDIT MODAL  -->
     <div id="addModal" class="modal" role="dialog" aria-modal="true">
         <div class="modal-backdrop" onclick="closeAddModal()"></div>
         <div class="modal-content">
@@ -147,9 +133,7 @@
             <div class="input-group">
                 <label for="device-type">Device Type</label>
                 <select id="device-type">
-                    <option value="light">💡 Light</option>
-                    <option value="ac">❄️ AC</option>
-                    <option value="doorlock">🔒 Door Lock</option>
+                    <option value="" disabled selected>Loading...</option>
                 </select>
             </div>
             <div class="input-group">
@@ -169,8 +153,7 @@
         </div>
     </div>
 
-    <!--  DEVICE CONTROL PANEL  -->
-    <div id="deviceControlPanel" class="slide-up-panel">
+    <div id="deviceControlPanel" class="slide-up-panel" role="dialog" aria-modal="true" aria-label="Device settings">
         <div class="panel-inner">
             <div class="panel-header">
                 <button class="back-btn" onclick="closeDeviceControl()">← Back</button>
@@ -234,7 +217,7 @@
 
                 <div id="panel-unknown" class="device-panel hidden">
                     <div class="settings-group empty-panel-msg">
-                        <span style="font-size:2.5rem">🔌</span>
+                        <span class="empty-panel-icon" aria-hidden="true">🔌</span>
                         <p>No advanced settings available for this device type.</p>
                     </div>
                 </div>
@@ -246,7 +229,7 @@
         </div>
     </div>
 
-    <script src="/static/js/main.js?v=2"></script>
+    <script src="/static/js/main.js?v=3"></script>
 </body>
 
 </html>
