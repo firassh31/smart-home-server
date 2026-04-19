@@ -40,7 +40,6 @@ It heavily leverages the industry-standard "Device Shadow" pattern to maintain a
 Clone the repository and navigate into the project folder:
 ```bash
 git clone [https://github.com/firassh31/Smart_home_api.git](https://github.com/firassh31/Smart_home_api.git)
-cd Smart_home_api
 ```
 
 Environment Variables (Important!)
@@ -55,6 +54,7 @@ PORT=3000
 ```
 ### 3. start the server
 ```
+cd smart-home-node
 node server.js
 ```
 
