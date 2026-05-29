@@ -64,6 +64,52 @@
     padding: 0;
 }
 
+/* --- LOGIN / AUTH OVERLAY --- */
+.auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-page);
+    z-index: 9999;
+    /* Stays above everything until logged in */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity var(--ease-smooth), visibility var(--ease-smooth);
+}
+
+.auth-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.auth-box {
+    width: 90%;
+    max-width: 400px;
+    transform: none !important;
+    text-align: left;
+}
+
+.auth-logo {
+    justify-content: center;
+    margin-bottom: var(--sp-md);
+}
+
+.auth-msg-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-height: 20px;
+    margin-top: 5px;
+}
+
+.auth-msg-text.error {
+    color: var(--alert-off);
+}
+
+.auth-msg-text.success {
+    color: var(--accent-on);
+}
+
 body {
     font-family: var(--font-base);
     background: var(--bg-page);
@@ -506,6 +552,46 @@ a {
 }
 
 /* ——— Device grid (2 cols mobile, 4 desktop) ——— */
+/* --- CIRCULAR POWER BUTTON FOR DEVICE CARDS --- */
+.power-circle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--ease-fast);
+    border: 2.5px solid var(--alert-off);
+    color: var(--alert-off);
+    /* Inherited by the SVG stroke */
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Green state when ON */
+.power-circle-btn.btn-on {
+    border-color: var(--accent-on);
+    color: var(--accent-on);
+    background: var(--bg-page);
+    /* Very subtle green fill */
+    box-shadow: 0 4px 12px rgba(52, 64, 10, 0.12);
+    /* Subtle glow */
+}
+
+/* Red state when OFF */
+.power-circle-btn.btn-off {
+    border-color: var(--alert-off);
+    color: var(--alert-off);
+    background: var(--bg-page);
+    /* Very subtle red fill */
+}
+
+/* Satisfying physical press effect */
+.power-circle-btn:active {
+    transform: scale(0.92);
+}
+
 .device-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -937,7 +1023,7 @@ a {
    CRITICAL: user-select:auto so text can be typed/selected.
    No pointer-events restrictions inside modals.
  */
-input[type="text"],
+.input-group input,
 select {
     width: 100%;
     padding: 12px var(--sp-md);
@@ -953,7 +1039,7 @@ select {
     -webkit-appearance: none;
 }
 
-input[type="text"]:focus,
+.input-group input:focus,
 select:focus {
     border-color: var(--accent-secondary);
     background: #fff;
@@ -1293,11 +1379,9 @@ select:focus {
     margin: 14px auto 0;
     border-radius: 50%;
     position: relative;
-    background: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--accent-secondary) 18%, transparent),
-        color-mix(in srgb, var(--bg-page) 40%, transparent)
-    );
+    background: linear-gradient(180deg,
+            color-mix(in srgb, var(--accent-secondary) 18%, transparent),
+            color-mix(in srgb, var(--bg-page) 40%, transparent));
     border: var(--dial-border) solid color-mix(in srgb, var(--bg-main) 92%, transparent);
     box-shadow: var(--shadow-sm);
     user-select: none;

@@ -9,6 +9,36 @@
 </head>
 
 <body>
+    <div id="auth-page" class="auth-overlay">
+        <div class="modal-content auth-box">
+            <div class="sidebar-logo auth-logo">
+                <span class="sidebar-logo-icon">🏠</span>
+                <span class="sidebar-logo-text" style="color: var(--text-primary);">MSHome</span>
+            </div>
+            <h3>Create Account / Login</h3>
+            <p class="modal-subtitle">Manage your smart devices securely.</p>
+
+            <form id="auth-form">
+                <div class="input-group">
+                    <label for="auth-name">Full Name</label>
+                    <input type="text" id="auth-name" placeholder="e.g. John Doe">
+                </div>
+                <div class="input-group">
+                    <label for="auth-email">Email Address</label>
+                    <input type="text" id="auth-email" placeholder="e.g. john@mshome.com">
+                </div>
+                <div class="input-group">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="Minimum 6 characters">
+                </div>
+
+                <p id="auth-message" class="auth-msg-text"></p>
+
+                <button type="submit" class="primary-btn btn-on full-width-btn" style="margin-top: 10px;">Sign
+                    In</button>
+            </form>
+        </div>
+    </div>
     <!-- Mobile: dim background when sidebar open -->
     <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 

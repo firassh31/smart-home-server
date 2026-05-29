@@ -146,9 +146,12 @@ const renderUI = () => {
                 <span class="room-label">📍 ${d.room || 'Unassigned'}</span>
             </div>
             <div class="device-actions">
-                <button class="toggle-btn ${on ? 'btn-on' : 'btn-off'}"
-                        data-toggle="${d.id}" data-status="${d.status}">
-                    ${on ? 'ON' : 'OFF'}
+                <button class="power-circle-btn ${on ? 'btn-on' : 'btn-off'}"
+                        data-toggle="${d.id}" data-status="${d.status}" aria-label="Toggle Power">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
                 </button>
             </div>
         </div>`;
@@ -160,7 +163,6 @@ const setToggleButton = (btn, status) => {
     const on = status === 'on';
     btn.classList.toggle('btn-on', on);
     btn.classList.toggle('btn-off', !on);
-    btn.textContent = on ? 'ON' : 'OFF';
     btn.dataset.status = status;
 };
 
@@ -557,6 +559,50 @@ const setupACDialGestures = () => {
 };
 
 const setupListeners = () => {
+    /* --- PART A: FORM VALIDATION REQUIREMENT --- */
+    const authForm = document.getElementById('auth-form');
+    const authMessage = document.getElementById('auth-message');
+
+    if (authForm) {
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault(); // Prevents page reload
+
+            const name = document.getElementById('auth-name').value.trim();
+            const email = document.getElementById('auth-email').value.trim();
+            const pass = document.getElementById('auth-password').value.trim();
+
+            // Reset message
+            authMessage.className = 'auth-msg-text error';
+
+            // 1. Check for empty fields
+            if (!name || !email || !pass) {
+                authMessage.textContent = "Error: All fields are required.";
+                return;
+            }
+
+            // 2. Validate Email Format (Regex)
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                authMessage.textContent = "Error: Please enter a valid email address.";
+                return;
+            }
+
+            // 3. Validate Password Length
+            if (pass.length < 6) {
+                authMessage.textContent = "Error: Password must be at least 6 characters.";
+                return;
+            }
+
+            // 4. Success Simulation (No server connection needed yet)
+            authMessage.className = 'auth-msg-text success';
+            authMessage.textContent = "Success! Logging you in...";
+
+            // Hide the login screen after 1.5 seconds to reveal the dashboard
+            setTimeout(() => {
+                document.getElementById('auth-page').classList.add('hidden');
+            }, 1500);
+        });
+    }
     document.addEventListener('click', onDocumentClick);
 
     el.brightnessSlider.addEventListener('input', e => {
@@ -621,6 +667,6 @@ window.logout = () => { };
 
 window.addEventListener('DOMContentLoaded', () => {
     setupListeners();
-    loadDevices();
     loadDeviceTypes();
+    loadDevices();
 });
