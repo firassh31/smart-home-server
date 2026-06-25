@@ -104,25 +104,38 @@ const updateActiveBadges = () => {
 /* --- ENFORCE PARENT/CHILD UI RULES --- */
 const applyRolePermissions = () => {
     const role = localStorage.getItem('mshome_role');
-    const code = localStorage.getItem('mshome_code'); // GRAB CODE FROM MEMORY
+    const code = localStorage.getItem('mshome_code');
 
     const addBtnDesktop = document.querySelector('.desktop-add-btn');
     const addBtnMobile = document.querySelector('.fab-btn');
+
+    // Mobile Sidebar elements
     const codeDisplay = document.getElementById('family-code-display');
     const codeVal = document.getElementById('family-code-val');
 
+    // Desktop Dashboard elements
+    const desktopCodeDisplay = document.getElementById('desktop-family-code');
+    const desktopCodeVal = document.getElementById('desktop-code-val');
+
     if (role === 'child') {
-        if (addBtnDesktop) addBtnDesktop.style.display = 'none';
-        if (addBtnMobile) addBtnMobile.style.display = 'none';
+        if (addBtnDesktop) addBtnDesktop.remove();
+        if (addBtnMobile) addBtnMobile.remove();
         if (codeDisplay) codeDisplay.classList.add('hidden');
+        if (desktopCodeDisplay) desktopCodeDisplay.classList.add('hidden');
     } else {
         if (addBtnDesktop) addBtnDesktop.style.display = 'flex';
         if (addBtnMobile) addBtnMobile.style.display = 'flex';
 
-        // ONLY SHOW CODE IF IT EXISTS AND IS VALID
-        if (codeDisplay && code && code !== 'undefined' && code !== 'null' && code !== '') {
-            codeDisplay.classList.remove('hidden');
-            codeVal.textContent = code;
+        // UNHIDE BOTH CODES FOR THE PARENT!
+        if (code && code !== 'undefined' && code !== 'null' && code !== '') {
+            if (codeDisplay) {
+                codeDisplay.classList.remove('hidden');
+                codeVal.textContent = code;
+            }
+            if (desktopCodeDisplay) {
+                desktopCodeDisplay.classList.remove('hidden');
+                desktopCodeVal.textContent = code;
+            }
         }
     }
 };
@@ -708,6 +721,18 @@ window.closeDeviceControl = closeDeviceControl;
 window.savePanelSettings = savePanelSettings;
 window.profile = () => { };
 window.settings = () => { };
+// Copies the family code to the clipboard and shows a toast
+window.copyFamilyCode = async () => {
+    const code = localStorage.getItem('mshome_code');
+    if (code) {
+        try {
+            await navigator.clipboard.writeText(code);
+            showToast('Invite code copied to clipboard!', 'success');
+        } catch (err) {
+            showToast('Failed to copy code.', 'error');
+        }
+    }
+};
 window.logout = () => {
     localStorage.clear();
     window.location.reload();

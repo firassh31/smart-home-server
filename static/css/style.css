@@ -1607,6 +1607,92 @@ select:focus {
     filter: grayscale(1);
 }
 
+/* =========================================
+   FAMILY CODE DISPLAY (CLICK-TO-COPY)
+   ========================================= */
+
+/* Shared Interactive Base */
+.code-display-box {
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.code-display-box:hover {
+    background-color: var(--bg-hover);
+}
+
+.code-display-box:active {
+    transform: scale(0.98);
+}
+
+.code-copy-icon {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Sidebar Specific Styles */
+.sidebar-code-display {
+    margin: 10px 20px;
+    padding: 10px;
+    background-color: var(--bg-panel);
+    text-align: center;
+}
+
+.sidebar-code-label {
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+}
+
+.sidebar-code-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-code-value {
+    /* Updated to use your accent-secondary color */
+    color: var(--accent-secondary);
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-size: 1.2rem;
+    /* Updated glow to match */
+    text-shadow: 0 0 8px var(--accent-secondary);
+}
+
+/* Desktop Dashboard Specific Styles */
+.desktop-code-display {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    width: fit-content;
+    display: flex;
+    align-items: center;
+}
+
+.desktop-code-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-right: 10px;
+}
+
+.desktop-code-value {
+    /* Updated to use your accent-secondary color */
+    color: var(--accent-secondary);
+    letter-spacing: 2px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    /* Updated glow to match */
+    text-shadow: 0 0 8px var(--accent-secondary);
+}
+
+.desktop-code-display .code-copy-icon {
+    margin-left: 10px;
+}
+
 /* KEYFRAMES */
 @keyframes spin {
     to {

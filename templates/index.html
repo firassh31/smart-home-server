@@ -62,11 +62,13 @@
             <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
         </div>
 
-        <div id="family-code-display" class="hidden"
-            style="margin: 10px 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; text-align: center; font-size: 0.85rem;">
-            <div style="color: var(--text-secondary); margin-bottom: 5px;">Family Code</div>
-            <div id="family-code-val"
-                style="color: var(--accent-on); font-weight: bold; letter-spacing: 2px; font-size: 1.1rem;">------</div>
+        <div id="family-code-display" class="hidden code-display-box sidebar-code-display" onclick="copyFamilyCode()"
+            title="Click to copy invite code">
+            <div class="sidebar-code-label">Family Code</div>
+            <div class="sidebar-code-wrapper">
+                <div id="family-code-val" class="sidebar-code-value">------</div>
+                <span class="code-copy-icon">📋</span>
+            </div>
         </div>
 
         <nav class="sidebar-nav">
@@ -124,6 +126,12 @@
                 <div class="hero-text">
                     <h2 class="hero-title">Welcome back 👋</h2>
                     <p class="hero-sub">Monitor and control all your smart devices from one place.</p>
+                    <div id="desktop-family-code" class="hidden code-display-box desktop-code-display"
+                        onclick="copyFamilyCode()" title="Click to copy invite code">
+                        <span class="desktop-code-label">Family Invite Code:</span>
+                        <strong id="desktop-code-val" class="desktop-code-value">------</strong>
+                        <span class="code-copy-icon">📋</span>
+                    </div>
                 </div>
                 <div class="hero-stats">
                     <div class="stat-card">
