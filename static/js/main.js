@@ -1,9 +1,6 @@
 /**
  * MSHome dashboard — vanilla JS
- * - Device list: fetch once, renderUI() updates DOM
- * - Card toggle: optimistic PUT /status, no full grid re-render
- * - Control panel: drafts (light / AC / lock) until Save Settings
- * - Modals: visibility via .is-open (CSS), not display toggles
+ * Upgraded with JWT Authentication & Role-Based Access Control
  */
 
 const API_URL = '/devices';
@@ -11,7 +8,7 @@ let devices = [];
 let activeRoom = 'All';
 let activeControlDevice = null;
 
-/** Cached DOM refs (queried once at parse time) */
+/** Cached DOM refs */
 const el = {
     deviceList: document.getElementById('deviceList'),
     roomNav: document.getElementById('room-nav'),
@@ -57,27 +54,26 @@ const showToast = (msg, type = 'success') => {
 const openModal = id => document.getElementById(id).classList.add('is-open');
 const closeModalById = id => document.getElementById(id).classList.remove('is-open');
 
-/* Fetch dynamic select options from the server */
+/* --- FETCH HELPERS WITH JWT TOKENS --- */
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('mshome_token')}`
+});
+
 const loadDeviceTypes = async () => {
     try {
-        // Fetch from the new backend route
-        const res = await fetch(API_URL + '/types');
+        const res = await fetch(API_URL + '/types', { headers: { 'Authorization': `Bearer ${localStorage.getItem('mshome_token')}` } });
         if (!res.ok) throw new Error();
-
         const types = await res.json();
-
-        // Map the JSON data into HTML <option> elements
-        el.deviceType.innerHTML = types.map(t =>
-            `<option value="${t.value}">${t.label}</option>`
-        ).join('');
-
+        el.deviceType.innerHTML = types.map(t => `<option value="${t.value}">${t.label}</option>`).join('');
     } catch {
-        console.error("Could not load device types from server.");
+        console.error("Could not load device types.");
     }
 };
+
 const loadDevices = async () => {
     try {
-        const res = await fetch(API_URL);
+        const res = await fetch(API_URL, { headers: { 'Authorization': `Bearer ${localStorage.getItem('mshome_token')}` } });
         if (!res.ok) throw new Error();
         devices = await res.json();
         renderUI();
@@ -86,19 +82,30 @@ const loadDevices = async () => {
     }
 };
 
-/** Devices in current room filter (for “Active” badge on mobile header) */
-const filteredDevices = () =>
-    activeRoom === 'All'
-        ? devices
-        : devices.filter(d => (d.room || 'Unassigned') === activeRoom);
+const filteredDevices = () => activeRoom === 'All' ? devices : devices.filter(d => (d.room || 'Unassigned') === activeRoom);
 
-/** Refresh header badges and stats without touching the grid */
 const updateActiveBadges = () => {
     const onInFilter = filteredDevices().filter(d => d.status === 'on').length;
     const onTotal = devices.filter(d => d.status === 'on').length;
     if (el.activeCount) el.activeCount.textContent = onInFilter;
     if (el.activeCountDesktop) el.activeCountDesktop.textContent = onInFilter;
     if (el.statOn) el.statOn.textContent = onTotal;
+};
+
+/* --- ENFORCE PARENT/CHILD UI RULES --- */
+const applyRolePermissions = () => {
+    const role = localStorage.getItem('mshome_role');
+    const addBtnDesktop = document.querySelector('.desktop-add-btn');
+    const addBtnMobile = document.querySelector('.fab-btn');
+
+    // Physically hide Add buttons if it's a child
+    if (role === 'child') {
+        if (addBtnDesktop) addBtnDesktop.style.display = 'none';
+        if (addBtnMobile) addBtnMobile.style.display = 'none';
+    } else {
+        if (addBtnDesktop) addBtnDesktop.style.display = 'flex';
+        if (addBtnMobile) addBtnMobile.style.display = 'flex';
+    }
 };
 
 const renderUI = () => {
@@ -112,42 +119,34 @@ const renderUI = () => {
     if (el.statRooms) el.statRooms.textContent = numRooms;
     updateActiveBadges();
 
-    el.roomNav.innerHTML = rooms
-        .map(
-            r =>
-                `<button class="room-pill${r === activeRoom ? ' active' : ''}" data-room="${r}">${r}</button>`
-        )
-        .join('');
+    el.roomNav.innerHTML = rooms.map(r => `<button class="room-pill${r === activeRoom ? ' active' : ''}" data-room="${r}">${r}</button>`).join('');
 
     if (!filtered.length) {
-        el.deviceList.innerHTML = `
-            <div class="empty-state device-grid__full">
-                <div class="empty-icon">🏠</div>
-                <p>No devices found here.</p>
-            </div>`;
+        el.deviceList.innerHTML = `<div class="empty-state device-grid__full"><div class="empty-icon">🏠</div><p>No devices found here.</p></div>`;
         return;
     }
 
-    el.deviceList.innerHTML = filtered
-        .map(d => {
-            const on = d.status === 'on';
-            return `
+    const isParent = localStorage.getItem('mshome_role') !== 'child';
+
+    el.deviceList.innerHTML = filtered.map(d => {
+        const on = d.status === 'on';
+        return `
         <div class="device-card" data-id="${d.id}">
+            ${isParent ? `
             <div class="device-card-menu">
                 <button class="device-card-menu-btn" data-menu="${d.id}">⋮</button>
                 <div id="device-menu-${d.id}" class="device-card-dropdown">
                     <button data-edit="${d.id}">Edit</button>
                     <button class="delete-text" data-delete="${d.id}">Delete</button>
                 </div>
-            </div>
+            </div>` : ''}
             <div class="device-info" data-open="${d.id}">
                 <div class="device-icon">${getIcon(d.type)}</div>
                 <strong>${d.name}</strong>
                 <span class="room-label">📍 ${d.room || 'Unassigned'}</span>
             </div>
             <div class="device-actions">
-                <button class="power-circle-btn ${on ? 'btn-on' : 'btn-off'}"
-                        data-toggle="${d.id}" data-status="${d.status}" aria-label="Toggle Power">
+                <button class="power-circle-btn ${on ? 'btn-on' : 'btn-off'}" data-toggle="${d.id}" data-status="${d.status}" aria-label="Toggle Power">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
                         <line x1="12" y1="2" x2="12" y2="12"></line>
@@ -155,8 +154,7 @@ const renderUI = () => {
                 </button>
             </div>
         </div>`;
-        })
-        .join('');
+    }).join('');
 };
 
 const setToggleButton = (btn, status) => {
@@ -174,14 +172,12 @@ const toggleDevice = async (id, currentStatus) => {
     const btn = document.querySelector(`#deviceList [data-toggle="${id}"]`);
     if (btn) setToggleButton(btn, newStatus);
     updateActiveBadges();
-    if (activeControlDevice?.id === id && el.controlPanel.classList.contains('active')) {
-        setPanelStatusToggleUI(newStatus);
-    }
+    if (activeControlDevice?.id === id && el.controlPanel.classList.contains('active')) setPanelStatusToggleUI(newStatus);
 
     try {
         const res = await fetch(`${API_URL}/${id}/status`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ status: newStatus }),
         });
         if (!res.ok) throw new Error();
@@ -189,9 +185,7 @@ const toggleDevice = async (id, currentStatus) => {
         if (dev) dev.status = currentStatus;
         if (btn) setToggleButton(btn, currentStatus);
         updateActiveBadges();
-        if (activeControlDevice?.id === id && el.controlPanel.classList.contains('active')) {
-            setPanelStatusToggleUI(currentStatus);
-        }
+        if (activeControlDevice?.id === id && el.controlPanel.classList.contains('active')) setPanelStatusToggleUI(currentStatus);
         showToast('Could not update device', 'error');
     }
 };
@@ -201,6 +195,11 @@ const saveDevice = async () => {
     const name = el.deviceName.value.trim();
     const room = el.deviceRoom.value.trim();
     const type = el.deviceType.value;
+
+    // Grab the child access checkbox!
+    const childAccessEl = document.getElementById('device-child-access');
+    const childAccess = childAccessEl ? childAccessEl.checked : false;
+
     if (!name || !room) return showToast('Please enter both fields', 'error');
 
     const method = id ? 'PUT' : 'POST';
@@ -209,8 +208,8 @@ const saveDevice = async () => {
     try {
         const res = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, room, type }),
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ name, room, type, childAccess }), // Send childAccess to backend
         });
         if (!res.ok) throw new Error();
         closeAddModal();
@@ -227,7 +226,10 @@ const confirmDelete = async () => {
     btn.disabled = true;
     btn.textContent = 'Deleting…';
     try {
-        const res = await fetch(`${API_URL}/${el.deleteIdField.value}`, { method: 'DELETE' });
+        const res = await fetch(`${API_URL}/${el.deleteIdField.value}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('mshome_token')}` }
+        });
         if (!res.ok) throw new Error();
         closeModal();
         await loadDevices();
@@ -253,6 +255,11 @@ const openAddModal = () => {
     el.deviceName.value = '';
     el.deviceRoom.value = '';
     el.deviceType.value = 'light';
+
+    // Reset Checkbox
+    const childAccessEl = document.getElementById('device-child-access');
+    if (childAccessEl) childAccessEl.checked = false;
+
     openModal('addModal');
     setTimeout(() => el.deviceName.focus(), 80);
 };
@@ -267,6 +274,11 @@ const editDevice = id => {
     el.deviceName.value = d.name;
     el.deviceRoom.value = d.room || '';
     el.deviceType.value = d.type;
+
+    // Load existing Checkbox status
+    const childAccessEl = document.getElementById('device-child-access');
+    if (childAccessEl) childAccessEl.checked = d.childAccess || false;
+
     closeAllDropdowns();
     openModal('addModal');
     setTimeout(() => el.deviceName.focus(), 80);
@@ -285,31 +297,22 @@ const closeAllDropdowns = () => {
     });
 };
 
-/* ——— Light panel ——— */
+/* ——— Light & AC Panel Logic ——— */
 const updateSliderFill = slider => {
     const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
     slider.style.setProperty('--value', `${pct}%`);
 };
 
-/* ——— AC dial (16–30°C, top semicircle; draft only until save) ——— */
-const AC_MIN_TEMP = 16;
-const AC_MAX_TEMP = 30;
-const AC_MIN_ANGLE = -180;
-const AC_MAX_ANGLE = 0;
-const AC_DIAL_RADIUS = 90;
-const AC_TRACK_RADIUS = AC_DIAL_RADIUS - 1.5;
-
+const AC_MIN_TEMP = 16, AC_MAX_TEMP = 30, AC_MIN_ANGLE = -180, AC_MAX_ANGLE = 0, AC_DIAL_RADIUS = 90, AC_TRACK_RADIUS = 88.5;
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
 const tempToAngle = temp => {
-    const t = clamp(temp, AC_MIN_TEMP, AC_MAX_TEMP);
-    const ratio = (t - AC_MIN_TEMP) / (AC_MAX_TEMP - AC_MIN_TEMP);
+    const ratio = (clamp(temp, AC_MIN_TEMP, AC_MAX_TEMP) - AC_MIN_TEMP) / (AC_MAX_TEMP - AC_MIN_TEMP);
     return AC_MIN_ANGLE + ratio * (AC_MAX_ANGLE - AC_MIN_ANGLE);
 };
 
 const angleToTemp = angle => {
-    const a = clamp(angle, AC_MIN_ANGLE, AC_MAX_ANGLE);
-    const ratio = (a - AC_MIN_ANGLE) / (AC_MAX_ANGLE - AC_MIN_ANGLE);
+    const ratio = (clamp(angle, AC_MIN_ANGLE, AC_MAX_ANGLE) - AC_MIN_ANGLE) / (AC_MAX_ANGLE - AC_MIN_ANGLE);
     return Math.round(AC_MIN_TEMP + ratio * (AC_MAX_TEMP - AC_MIN_TEMP));
 };
 
@@ -338,27 +341,22 @@ const updateACTicks = () => {
         const tickTemp = +tick.dataset.temp;
         const ratio = (tickTemp - AC_MIN_TEMP) / (AC_MAX_TEMP - AC_MIN_TEMP);
         const rad = (tempToAngle(tickTemp) * Math.PI) / 180;
-        const x = AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.cos(rad);
-        const y = AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.sin(rad);
-        tick.style.left = `${x}px`;
-        tick.style.top = `${y}px`;
+        tick.style.left = `${AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.cos(rad)}px`;
+        tick.style.top = `${AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.sin(rad)}px`;
         const cool = ratio <= 0.5;
         tick.classList.toggle('tick-cool', cool);
         tick.classList.toggle('tick-warm', !cool);
-        const blend = cool ? clamp(ratio / 0.5, 0, 1) : clamp((ratio - 0.5) / 0.5, 0, 1);
-        tick.style.setProperty('--tick-blend', String(blend));
+        tick.style.setProperty('--tick-blend', String(cool ? clamp(ratio / 0.5, 0, 1) : clamp((ratio - 0.5) / 0.5, 0, 1)));
     });
 };
 
 const setACDialUI = temp => {
     const safe = setACTemperatureDraft(temp);
     const rad = (tempToAngle(safe) * Math.PI) / 180;
-    const x = AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.cos(rad);
-    const y = AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.sin(rad);
     el.tempDisplay.textContent = String(safe);
     if (el.acDialKnob) {
-        el.acDialKnob.style.left = `${x}px`;
-        el.acDialKnob.style.top = `${y}px`;
+        el.acDialKnob.style.left = `${AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.cos(rad)}px`;
+        el.acDialKnob.style.top = `${AC_DIAL_RADIUS + AC_TRACK_RADIUS * Math.sin(rad)}px`;
     }
     updateACTicks();
 };
@@ -391,13 +389,11 @@ const openDeviceControl = id => {
     } else if (d.type === 'ac') {
         setACDialUI(d.state?.temperature ?? 22);
     } else if (d.type === 'doorlock') {
-        const locked = d.state?.is_locked !== false;
-        setUnlockButtonUI(locked);
+        setUnlockButtonUI(d.state?.is_locked !== false);
     }
 
     document.querySelectorAll('.device-panel').forEach(p => p.classList.add('hidden'));
-    const panel = document.getElementById(`panel-${d.type}`) || document.getElementById('panel-unknown');
-    panel.classList.remove('hidden');
+    (document.getElementById(`panel-${d.type}`) || document.getElementById('panel-unknown')).classList.remove('hidden');
     el.controlPanel.classList.add('active');
 };
 
@@ -408,15 +404,13 @@ const closeDeviceControl = () => {
 
 const updateDeviceStatus = async newStatus => {
     if (!activeControlDevice) return;
-    const id = activeControlDevice.id;
-    const res = await fetch(`${API_URL}/${id}/status`, {
+    const res = await fetch(`${API_URL}/${activeControlDevice.id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status: newStatus }),
     });
     if (!res.ok) throw new Error('status update failed');
-    await res.json(); // API returns { message, status } — no device id; patch local model
-    const i = devices.findIndex(d => d.id === id);
+    const i = devices.findIndex(d => d.id === activeControlDevice.id);
     if (i !== -1) devices[i].status = newStatus;
 };
 
@@ -424,7 +418,7 @@ const updateDeviceState = async stateUpdates => {
     if (!activeControlDevice) return;
     const res = await fetch(`${API_URL}/${activeControlDevice.id}/state`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(stateUpdates),
     });
     if (!res.ok) throw new Error('state update failed');
@@ -435,18 +429,13 @@ const updateDeviceState = async stateUpdates => {
 
 const savePanelSettings = async () => {
     if (!activeControlDevice) return;
-
     const statusToSave = el.panelStatusToggle.dataset.status || 'off';
     const stateUpdates = {};
     const t = activeControlDevice.type;
 
     if (t === 'light') stateUpdates.brightness = parseInt(el.brightnessSlider.value, 10);
-    else if (t === 'ac') {
-        stateUpdates.temperature =
-            activeControlDevice.state?.temperature ?? parseInt(el.tempDisplay.textContent, 10);
-    } else if (t === 'doorlock') {
-        stateUpdates.is_locked = activeControlDevice.state?.is_locked !== false;
-    }
+    else if (t === 'ac') stateUpdates.temperature = activeControlDevice.state?.temperature ?? parseInt(el.tempDisplay.textContent, 10);
+    else if (t === 'doorlock') stateUpdates.is_locked = activeControlDevice.state?.is_locked !== false;
 
     if (!activeControlDevice.state) activeControlDevice.state = {};
 
@@ -465,26 +454,17 @@ const savePanelSettings = async () => {
 
 const onDocumentClick = e => {
     const t = e.target;
-
     const roomBtn = t.closest('[data-room]');
-    if (roomBtn) {
-        activeRoom = roomBtn.dataset.room;
-        renderUI();
-        return;
-    }
+    if (roomBtn) { activeRoom = roomBtn.dataset.room; renderUI(); return; }
 
     const menuBtn = t.closest('[data-menu]');
     if (menuBtn) {
         e.stopPropagation();
-        const id = menuBtn.dataset.menu;
-        const dd = document.getElementById(`device-menu-${id}`);
+        const dd = document.getElementById(`device-menu-${menuBtn.dataset.menu}`);
         const card = menuBtn.closest('.device-card');
         const wasOpen = dd.classList.contains('show');
         closeAllDropdowns();
-        if (!wasOpen) {
-            dd.classList.add('show');
-            if (card) card.classList.add('menu-open');
-        }
+        if (!wasOpen) { dd.classList.add('show'); if (card) card.classList.add('menu-open'); }
         return;
     }
 
@@ -508,47 +488,28 @@ const onDocumentClick = e => {
     if (!t.closest('.device-card-menu')) closeAllDropdowns();
 };
 
-const getPointer = evt => {
-    if (evt.touches?.length) return evt.touches[0];
-    if (evt.changedTouches?.length) return evt.changedTouches[0];
-    return evt;
-};
-
-const updateACDialFromPointer = evt => {
-    if (!activeControlDevice || activeControlDevice.type !== 'ac') return;
-    const p = getPointer(evt);
-    const rect = el.acDial.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    let deg = (Math.atan2(p.clientY - cy, p.clientX - cx) * 180) / Math.PI;
-    if (deg > 0) deg = deg > 90 ? -180 : 0;
-    setACDialUI(angleToTemp(deg));
-};
-
 const setupACDialGestures = () => {
     if (!el.acDial) return;
     buildACTicks();
     let dragging = false;
+    const getPointer = evt => evt.touches?.length ? evt.touches[0] : (evt.changedTouches?.length ? evt.changedTouches[0] : evt);
+
+    const updateACDialFromPointer = evt => {
+        if (!activeControlDevice || activeControlDevice.type !== 'ac') return;
+        const p = getPointer(evt);
+        const rect = el.acDial.getBoundingClientRect();
+        let deg = (Math.atan2(p.clientY - (rect.top + rect.height / 2), p.clientX - (rect.left + rect.width / 2)) * 180) / Math.PI;
+        if (deg > 0) deg = deg > 90 ? -180 : 0;
+        setACDialUI(angleToTemp(deg));
+    };
 
     const start = evt => {
         if (!activeControlDevice || activeControlDevice.type !== 'ac') return;
-        dragging = true;
-        el.acDial.classList.add('dragging');
-        updateACDialFromPointer(evt);
+        dragging = true; el.acDial.classList.add('dragging'); updateACDialFromPointer(evt);
         if (evt.cancelable) evt.preventDefault();
     };
-
-    const move = evt => {
-        if (!dragging) return;
-        updateACDialFromPointer(evt);
-        if (evt.cancelable) evt.preventDefault();
-    };
-
-    const end = () => {
-        if (!dragging) return;
-        dragging = false;
-        el.acDial.classList.remove('dragging');
-    };
+    const move = evt => { if (dragging) { updateACDialFromPointer(evt); if (evt.cancelable) evt.preventDefault(); } };
+    const end = () => { if (dragging) { dragging = false; el.acDial.classList.remove('dragging'); } };
 
     el.acDial.addEventListener('mousedown', start);
     document.addEventListener('mousemove', move);
@@ -559,48 +520,114 @@ const setupACDialGestures = () => {
 };
 
 const setupListeners = () => {
-    /* --- PART A: FORM VALIDATION REQUIREMENT --- */
+    /* --- AUTHENTICATION LOGIC --- */
     const authForm = document.getElementById('auth-form');
     const authMessage = document.getElementById('auth-message');
+    const authToggleLink = document.getElementById('auth-toggle-link');
+    const authToggleText = document.getElementById('auth-toggle-text');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+
+    const nameGroup = document.getElementById('auth-name-group');
+    const roleGroup = document.getElementById('auth-role-group');
+    const emailGroup = document.getElementById('auth-email-group');
+    const parentGroup = document.getElementById('auth-parent-group'); // NEW
+    const roleSelect = document.getElementById('auth-role'); // NEW
+
+    let isLoginMode = true;
 
     if (authForm) {
-        authForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // Prevents page reload
+        // Show/Hide Parent input based on dropdown selection
+        roleSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'child' && !isLoginMode) {
+                parentGroup.classList.remove('hidden');
+            } else {
+                parentGroup.classList.add('hidden');
+            }
+        });
+
+        authToggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+
+            if (isLoginMode) {
+                if (roleGroup) roleGroup.classList.add('hidden');
+                if (emailGroup) emailGroup.classList.add('hidden');
+                if (parentGroup) parentGroup.classList.add('hidden');
+                authSubmitBtn.textContent = 'Sign In';
+                authToggleText.textContent = "Don't have an account?";
+                authToggleLink.textContent = 'Register here';
+                document.querySelector('.auth-box h3').textContent = 'Create Account / Login';
+            } else {
+                if (roleGroup) roleGroup.classList.remove('hidden');
+                if (emailGroup) emailGroup.classList.remove('hidden');
+                if (roleSelect.value === 'child') parentGroup.classList.remove('hidden');
+                authSubmitBtn.textContent = 'Create Account';
+                authToggleText.textContent = "Already have an account?";
+                authToggleLink.textContent = 'Log in here';
+                document.querySelector('.auth-box h3').textContent = 'Create Account';
+            }
+            authMessage.textContent = '';
+        });
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
             const name = document.getElementById('auth-name').value.trim();
-            const email = document.getElementById('auth-email').value.trim();
-            const pass = document.getElementById('auth-password').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            const role = roleSelect.value;
+            const parentName = document.getElementById('auth-parent').value.trim();
 
-            // Reset message
             authMessage.className = 'auth-msg-text error';
 
-            // 1. Check for empty fields
-            if (!name || !email || !pass) {
-                authMessage.textContent = "Error: All fields are required.";
-                return;
+            if (!name || !password) return authMessage.textContent = "Error: Fill all fields.";
+            if (!isLoginMode && role === 'child' && !parentName) {
+                return authMessage.textContent = "Error: Child accounts must enter their Parent's Username.";
             }
 
-            // 2. Validate Email Format (Regex)
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                authMessage.textContent = "Error: Please enter a valid email address.";
-                return;
+            let payload;
+            if (isLoginMode) {
+                payload = { name, password };
+            } else {
+                const email = document.getElementById('auth-email').value.trim();
+                if (!email) return authMessage.textContent = "Error: Email is required to register.";
+                if (password.length < 6) return authMessage.textContent = "Error: Password must be at least 6 characters.";
+                payload = { name, email, password, role, parentName }; // Send Parent Name!
             }
 
-            // 3. Validate Password Length
-            if (pass.length < 6) {
-                authMessage.textContent = "Error: Password must be at least 6 characters.";
-                return;
+            const endpoint = isLoginMode ? '/auth/login' : '/auth/register';
+
+            try {
+                authSubmitBtn.textContent = 'Processing...';
+                authSubmitBtn.disabled = true;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Authentication failed');
+
+                localStorage.setItem('mshome_token', data.token);
+                localStorage.setItem('mshome_role', data.role);
+
+                authMessage.className = 'auth-msg-text success';
+                authMessage.textContent = data.message;
+
+                setTimeout(() => {
+                    document.getElementById('auth-page').classList.add('hidden');
+                    applyRolePermissions();
+                    loadDeviceTypes();
+                    loadDevices();
+                }, 1000);
+
+            } catch (error) {
+                authMessage.textContent = "Error: " + error.message;
+            } finally {
+                authSubmitBtn.textContent = isLoginMode ? 'Sign In' : 'Create Account';
+                authSubmitBtn.disabled = false;
             }
-
-            // 4. Success Simulation (No server connection needed yet)
-            authMessage.className = 'auth-msg-text success';
-            authMessage.textContent = "Success! Logging you in...";
-
-            // Hide the login screen after 1.5 seconds to reveal the dashboard
-            setTimeout(() => {
-                document.getElementById('auth-page').classList.add('hidden');
-            }, 1500);
         });
     }
     document.addEventListener('click', onDocumentClick);
@@ -612,26 +639,21 @@ const setupListeners = () => {
 
     el.presetContainer?.addEventListener('click', e => {
         const btn = e.target.closest('.preset-btn');
-        if (!btn) return;
-        const val = btn.getAttribute('data-val');
-        if (val == null) return;
-        el.brightnessSlider.value = val;
-        el.brightnessDisplay.textContent = val;
+        if (!btn || btn.getAttribute('data-val') == null) return;
+        el.brightnessSlider.value = btn.getAttribute('data-val');
+        el.brightnessDisplay.textContent = el.brightnessSlider.value;
         updateSliderFill(el.brightnessSlider);
     });
 
     setupACDialGestures();
 
-    // Power in panel is draft-only: do not mutate devices[] / card until Save Settings.
     el.panelStatusToggle.addEventListener('click', () => {
-        const cur = el.panelStatusToggle.dataset.status || 'off';
-        setPanelStatusToggleUI(cur === 'on' ? 'off' : 'on');
+        setPanelStatusToggleUI(el.panelStatusToggle.dataset.status === 'on' ? 'off' : 'on');
     });
 
     el.unlockBtn.addEventListener('click', e => {
         if (!activeControlDevice) return;
-        const locked = activeControlDevice.state?.is_locked !== false;
-        const nextLocked = !locked;
+        const nextLocked = activeControlDevice.state?.is_locked === false;
         if (!activeControlDevice.state) activeControlDevice.state = {};
         activeControlDevice.state.is_locked = nextLocked;
         setPanelStatusToggleUI(nextLocked ? 'on' : 'off');
@@ -647,12 +669,11 @@ const setupListeners = () => {
     });
 
     [el.deviceName, el.deviceRoom].forEach(inp =>
-        inp.addEventListener('keydown', e => {
-            if (e.key === 'Enter') saveDevice();
-        })
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') saveDevice(); })
     );
 };
 
+// Map functions to window for HTML onClick compatibility
 window.saveDevice = saveDevice;
 window.confirmDelete = confirmDelete;
 window.openAddModal = openAddModal;
@@ -663,10 +684,28 @@ window.closeDeviceControl = closeDeviceControl;
 window.savePanelSettings = savePanelSettings;
 window.profile = () => { };
 window.settings = () => { };
-window.logout = () => { };
+window.logout = () => {
+    // TRUE LOGOUT: Erases memory and reloads the page to lock it!
+    localStorage.removeItem('mshome_token');
+    localStorage.removeItem('mshome_role');
+    window.location.reload();
+};
 
 window.addEventListener('DOMContentLoaded', () => {
     setupListeners();
-    loadDeviceTypes();
-    loadDevices();
+
+    // Check if user is logged in
+    const token = localStorage.getItem('mshome_token');
+    const authPage = document.getElementById('auth-page');
+
+    if (token) {
+        // Logged in: Hide auth screen and load devices!
+        if (authPage) authPage.classList.add('hidden');
+        applyRolePermissions();
+        loadDevices();
+        loadDeviceTypes();
+    } else {
+        // Not logged in: Ensure auth screen is visible
+        if (authPage) authPage.classList.remove('hidden');
+    }
 });

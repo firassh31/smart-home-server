@@ -2,6 +2,7 @@ import { getDB } from '../config/db.js';
 import { ObjectId } from 'mongodb';
 import { deviceManager } from '../services/DeviceManager.js';
 
+
 // GET DEVICE TYPES (Fulfills the dynamic select requirement)
 export const getDeviceTypes = (req, res) => {
     try {
@@ -27,6 +28,10 @@ const getSafeId = (id) => {
 export const getDevices = async (req, res) => {
     try {
         const db = await getDB(); // Grab our connected database!
+        let filter = {};
+        if (req.user.role === 'child') {
+            filter = { childAccess: true };
+        }                          // This ensures that children can only see devices they are allowed to access
         const devices = await db.collection("devices").find({}).toArray();
 
         // Format the MongoDB _id to match the frontend requirements
@@ -92,7 +97,8 @@ export const addDevice = async (req, res) => {
             room: room,
             type: deviceType,
             status: 'off',
-            state: defaultState
+            state: defaultState,
+            childAccess: req.body.childAccess || false
         };
 
         const result = await db.collection("devices").insertOne(newDevice);
@@ -136,7 +142,7 @@ export const editDevice = async (req, res) => {
         const safeId = getSafeId(id);
         await db.collection('devices').updateOne(
             { _id: safeId },
-            { $set: { name, room, type } }
+            { $set: { name, room, type, childAccess } }
         );
 
         res.status(200).json({ message: "Device updated successfully" });

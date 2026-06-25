@@ -13,29 +13,45 @@
         <div class="modal-content auth-box">
             <div class="sidebar-logo auth-logo">
                 <span class="sidebar-logo-icon">🏠</span>
-                <span class="sidebar-logo-text" style="color: var(--text-primary);">MSHome</span>
+                <span class="sidebar-logo-text auth-logo-text">MSHome</span>
             </div>
             <h3>Create Account / Login</h3>
             <p class="modal-subtitle">Manage your smart devices securely.</p>
 
             <form id="auth-form">
-                <div class="input-group">
-                    <label for="auth-name">Full Name</label>
+                <div class="input-group" id="auth-name-group">
+                    <label for="auth-name">Username</label>
                     <input type="text" id="auth-name" placeholder="e.g. John Doe">
                 </div>
-                <div class="input-group">
+
+                <div class="input-group hidden" id="auth-role-group">
+                    <label for="auth-role">Account Type</label>
+                    <select id="auth-role">
+                        <option value="parent">Parent (Full Access)</option>
+                        <option value="child">Child (Restricted Access)</option>
+                    </select>
+                </div>
+                <div class="input-group hidden" id="auth-parent-group">
+                    <label for="auth-parent">Parent's Username (Required for Child)</label>
+                    <input type="text" id="auth-parent" placeholder="Enter your parent's exact username">
+                </div>
+
+                <div class="input-group hidden" id="auth-email-group">
                     <label for="auth-email">Email Address</label>
                     <input type="text" id="auth-email" placeholder="e.g. john@mshome.com">
                 </div>
+
                 <div class="input-group">
                     <label for="auth-password">Password</label>
                     <input type="password" id="auth-password" placeholder="Minimum 6 characters">
                 </div>
 
                 <p id="auth-message" class="auth-msg-text"></p>
-
-                <button type="submit" class="primary-btn btn-on full-width-btn" style="margin-top: 10px;">Sign
-                    In</button>
+                <button type="submit" id="auth-submit-btn" class="primary-btn btn-on full-width-btn">Sign In</button>
+                <p class="auth-toggle-wrapper">
+                    <span id="auth-toggle-text">Don't have an account?</span>
+                    <a href="#" id="auth-toggle-link">Register here</a>
+                </p>
             </form>
         </div>
     </div>
@@ -176,6 +192,10 @@
                 <input type="text" id="device-room" placeholder="e.g. Bedroom" autocomplete="off" autocorrect="off"
                     spellcheck="false">
             </div>
+            <div class="input-group" id="child-access-wrapper">
+                <input type="checkbox" id="device-child-access">
+                <label for="device-child-access" class="checkbox-label">Allow Child Access</label>
+            </div>x`x`
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeAddModal()">Cancel</button>
                 <button class="primary-btn btn-on" onclick="saveDevice()">Save</button>

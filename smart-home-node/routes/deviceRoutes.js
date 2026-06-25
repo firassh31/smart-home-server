@@ -1,4 +1,5 @@
 import express from 'express';
+import { verifyToken, verifyParent } from '../middleware/authMiddleware.js';
 // Explicitly importing every single function so Express CANNOT get confused
 import {
     getDeviceTypes,
@@ -15,9 +16,10 @@ const router = express.Router();
 // --- THE MAP ---
 router.get('/types', getDeviceTypes);
 router.get('/', getDevices);
-router.post('/', addDevice);
-router.delete('/:id', deleteDevice);
-router.put('/:id', editDevice);
 router.put('/:id/state', updateDeviceState);
 router.put('/:id/status', updateDeviceStatus);
+
+router.post('/', verifyParent, addDevice);
+router.put('/:id', verifyParent, editDevice);
+router.delete('/:id', verifyParent, deleteDevice);
 export default router;

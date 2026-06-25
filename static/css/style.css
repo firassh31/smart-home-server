@@ -64,13 +64,12 @@
     padding: 0;
 }
 
-/* --- LOGIN / AUTH OVERLAY --- */
+/* LOGIN / AUTH OVERLAY UNIFIED STYLES */
 .auth-overlay {
     position: fixed;
     inset: 0;
     background: var(--bg-page);
     z-index: 9999;
-    /* Stays above everything until logged in */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -95,6 +94,10 @@
     margin-bottom: var(--sp-md);
 }
 
+.auth-logo-text {
+    color: var(--text-primary);
+}
+
 .auth-msg-text {
     font-size: 0.85rem;
     font-weight: 600;
@@ -108,6 +111,53 @@
 
 .auth-msg-text.success {
     color: var(--accent-on);
+}
+
+#auth-submit-btn {
+    margin-top: 10px;
+}
+
+.auth-toggle-wrapper {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+#auth-toggle-link {
+    color: var(--accent-on);
+    font-weight: bold;
+    transition: color var(--ease-fast);
+}
+
+#auth-toggle-link:hover {
+    color: var(--accent-secondary);
+}
+
+/* CHILD ACCESS CHECKBOX (Add Device Modal) */
+#child-access-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#device-child-access {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    /* Reset the default input padding/border for this specific checkbox */
+    padding: 0;
+    appearance: auto;
+    -webkit-appearance: checkbox;
+}
+
+#child-access-wrapper .checkbox-label {
+    margin: 0;
+    cursor: pointer;
+    text-transform: none;
+    font-size: 0.9rem;
+    color: var(--text-primary);
 }
 
 body {
