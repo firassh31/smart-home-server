@@ -19,7 +19,8 @@ export const verifyToken = (req, res, next) => {
 
 // 2. Checks if the logged-in user is a Parent
 export const verifyParent = (req, res, next) => {
-    if (req.user.role !== 'parent') {
+    // 🛡️ SAFETY CHECK: Make sure req.user actually exists before checking the role!
+    if (!req.user || req.user.role !== 'parent') {
         return res.status(403).json({ error: "Access Denied. Parents only." });
     }
     next();

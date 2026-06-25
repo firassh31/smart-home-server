@@ -7,42 +7,43 @@ const SECRET_KEY = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
 export const register = async (req, res) => {
     try {
         const db = getDB();
-        const { name, email, password, role, parentName } = req.body;
+        const { name, email, password, role, familyCode } = req.body; // Look for familyCode now!
 
         const existingUser = await db.collection('users').findOne({ name });
         if (existingUser) return res.status(400).json({ error: "Username is already taken." });
 
         let familyId = null;
+        let generatedFamilyCode = null;
 
-        // 1. LINK THE CHILD TO THE PARENT
+        // LINK THE CHILD USING THE SECRET CODE
         if (role === 'child') {
-            const parentUser = await db.collection('users').findOne({ name: parentName, role: 'parent' });
-            if (!parentUser) return res.status(400).json({ error: "Parent username not found. Ask your parent for their exact username." });
+            const parentUser = await db.collection('users').findOne({ familyCode: familyCode, role: 'parent' });
+            if (!parentUser) return res.status(400).json({ error: "Invalid Family Code. Ask your parent for the 6-digit code." });
             familyId = parentUser._id.toString();
+        } else {
+            // GENERATE A RANDOM 6-DIGIT CODE FOR THE PARENT
+            generatedFamilyCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = {
             name, email, password: hashedPassword,
             role: role === 'child' ? 'child' : 'parent',
-            familyId: familyId // Null for parents initially
+            familyId: familyId,
+            familyCode: generatedFamilyCode // Only Parents get a code
         };
         const result = await db.collection('users').insertOne(newUser);
 
-        // 2. PARENTS BECOME THEIR OWN FAMILY ID
+        // Parent's familyId is their own ID
         if (role !== 'child') {
             familyId = result.insertedId.toString();
             await db.collection('users').updateOne({ _id: result.insertedId }, { $set: { familyId } });
-        } else {
-            await db.collection('users').updateOne({ _id: result.insertedId }, { $set: { familyId } });
         }
 
-        // 3. PACK THE FAMILY ID INTO THE TOKEN
         const token = jwt.sign({ id: result.insertedId, role: newUser.role, familyId }, SECRET_KEY, { expiresIn: '24h' });
 
-        res.status(201).json({ message: "Account created successfully!", token, role: newUser.role });
+        res.status(201).json({ message: "Account created!", token, role: newUser.role, familyCode: generatedFamilyCode });
     } catch (error) {
-        console.error("🔥 REGISTRATION CRASH LOG:", error);
         res.status(500).json({ error: "Registration failed." });
     }
 };
@@ -58,12 +59,11 @@ export const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ error: "Invalid username or password." });
 
-        // Include the user's familyId in the digital ID card!
         const token = jwt.sign({ id: user._id, role: user.role, familyId: user.familyId }, SECRET_KEY, { expiresIn: '24h' });
 
-        res.status(200).json({ message: "Login successful!", token, role: user.role });
+        // Send the familyCode back to the frontend so the Parent can see it!
+        res.status(200).json({ message: "Login successful!", token, role: user.role, familyCode: user.familyCode });
     } catch (error) {
-        console.error("🔥 LOGIN CRASH LOG:", error);
         res.status(500).json({ error: "Login failed." });
     }
 };

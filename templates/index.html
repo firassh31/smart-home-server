@@ -17,13 +17,11 @@
             </div>
             <h3>Create Account / Login</h3>
             <p class="modal-subtitle">Manage your smart devices securely.</p>
-
             <form id="auth-form">
                 <div class="input-group" id="auth-name-group">
                     <label for="auth-name">Username</label>
                     <input type="text" id="auth-name" placeholder="e.g. John Doe">
                 </div>
-
                 <div class="input-group hidden" id="auth-role-group">
                     <label for="auth-role">Account Type</label>
                     <select id="auth-role">
@@ -32,20 +30,18 @@
                     </select>
                 </div>
                 <div class="input-group hidden" id="auth-parent-group">
-                    <label for="auth-parent">Parent's Username (Required for Child)</label>
-                    <input type="text" id="auth-parent" placeholder="Enter your parent's exact username">
+                    <label for="auth-family-code">Family Invite Code</label>
+                    <input type="text" id="auth-family-code" placeholder="e.g. X7B9Q2"
+                        style="text-transform: uppercase;">
                 </div>
-
                 <div class="input-group hidden" id="auth-email-group">
                     <label for="auth-email">Email Address</label>
                     <input type="text" id="auth-email" placeholder="e.g. john@mshome.com">
                 </div>
-
                 <div class="input-group">
                     <label for="auth-password">Password</label>
                     <input type="password" id="auth-password" placeholder="Minimum 6 characters">
                 </div>
-
                 <p id="auth-message" class="auth-msg-text"></p>
                 <button type="submit" id="auth-submit-btn" class="primary-btn btn-on full-width-btn">Sign In</button>
                 <p class="auth-toggle-wrapper">
@@ -55,9 +51,8 @@
             </form>
         </div>
     </div>
-    <!-- Mobile: dim background when sidebar open -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
+    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
     <aside id="sidebar" class="sidebar" aria-label="Main menu">
         <div class="sidebar-header">
             <div class="sidebar-logo">
@@ -66,6 +61,14 @@
             </div>
             <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
         </div>
+
+        <div id="family-code-display" class="hidden"
+            style="margin: 10px 20px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; text-align: center; font-size: 0.85rem;">
+            <div style="color: var(--text-secondary); margin-bottom: 5px;">Family Code</div>
+            <div id="family-code-val"
+                style="color: var(--accent-on); font-weight: bold; letter-spacing: 2px; font-size: 1.1rem;">------</div>
+        </div>
+
         <nav class="sidebar-nav">
             <button class="nav-item" onclick="profile()"><span class="nav-icon">👤</span>Profile</button>
             <button class="nav-item" onclick="settings()"><span class="nav-icon">⚙️</span>Settings</button>
@@ -158,6 +161,7 @@
 
     <button type="button" class="fab-btn mobile-only" onclick="openAddModal()" aria-label="Add device">+</button>
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
     <div id="deleteModal" class="modal" role="dialog" aria-modal="true">
         <div class="modal-backdrop" onclick="closeModal()"></div>
         <div class="modal-content">
@@ -184,18 +188,16 @@
             </div>
             <div class="input-group">
                 <label for="device-name">Device Name</label>
-                <input type="text" id="device-name" placeholder="e.g. Living Room Lamp" autocomplete="off"
-                    autocorrect="off" spellcheck="false">
+                <input type="text" id="device-name" placeholder="e.g. Living Room Lamp" autocomplete="off">
             </div>
             <div class="input-group">
                 <label for="device-room">Room</label>
-                <input type="text" id="device-room" placeholder="e.g. Bedroom" autocomplete="off" autocorrect="off"
-                    spellcheck="false">
+                <input type="text" id="device-room" placeholder="e.g. Bedroom" autocomplete="off">
             </div>
             <div class="input-group" id="child-access-wrapper">
                 <input type="checkbox" id="device-child-access">
                 <label for="device-child-access" class="checkbox-label">Allow Child Access</label>
-            </div>x`x`
+            </div>
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="closeAddModal()">Cancel</button>
                 <button class="primary-btn btn-on" onclick="saveDevice()">Save</button>
@@ -203,7 +205,7 @@
         </div>
     </div>
 
-    <div id="deviceControlPanel" class="slide-up-panel" role="dialog" aria-modal="true" aria-label="Device settings">
+    <div id="deviceControlPanel" class="slide-up-panel" role="dialog" aria-modal="true">
         <div class="panel-inner">
             <div class="panel-header">
                 <button class="back-btn" onclick="closeDeviceControl()">← Back</button>
@@ -213,7 +215,6 @@
                 <button id="panel-status-toggle" class="toggle-btn btn-off" type="button">OFF</button>
             </div>
             <div class="panel-content">
-
                 <div id="panel-light" class="device-panel hidden">
                     <div class="settings-group">
                         <div class="settings-group-header">
@@ -223,7 +224,7 @@
                             <span id="brightness-display">100</span><sup>%</sup>
                         </div>
                         <input type="range" min="1" max="100" value="100" class="full-width-slider"
-                            id="brightness-slider" title="Brightness level">
+                            id="brightness-slider">
                         <div class="slider-labels"><span>Dim</span><span>Bright</span></div>
                         <div class="preset-container">
                             <button type="button" class="preset-btn" data-val="25">25%</button>
@@ -233,7 +234,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div id="panel-ac" class="device-panel hidden">
                     <div class="settings-group">
                         <div class="settings-group-header">
@@ -242,36 +242,31 @@
                         <div class="ac-dial-wrap">
                             <span class="ac-range-label ac-range-label-left">16°C</span>
                             <span class="ac-range-label ac-range-label-right">30°C</span>
-                            <div class="ac-dial" id="ac-dial" aria-label="AC temperature dial">
+                            <div class="ac-dial" id="ac-dial">
                                 <div class="ac-dial-ticks" id="ac-dial-ticks"></div>
                                 <div class="ac-dial-center">
                                     <span class="temp-display">22</span><sup>°C</sup>
                                 </div>
-                                <button type="button" class="ac-dial-knob" id="ac-dial-knob"
-                                    aria-label="Adjust temperature"></button>
+                                <button type="button" class="ac-dial-knob" id="ac-dial-knob"></button>
                             </div>
                         </div>
                     </div>
                 </div>
-
                 <div id="panel-doorlock" class="device-panel hidden">
                     <div class="settings-group">
                         <div class="settings-group-header">
                             <h3>Security</h3>
                         </div>
-                        <p class="modal-subtitle">Remotely unlock this device. Make sure you're present before
-                            unlocking.</p>
+                        <p class="modal-subtitle">Remotely unlock this device.</p>
                         <button class="primary-btn danger-btn full-width-btn" id="unlock-btn">Unlock Door</button>
                     </div>
                 </div>
-
                 <div id="panel-unknown" class="device-panel hidden">
                     <div class="settings-group empty-panel-msg">
                         <span class="empty-panel-icon" aria-hidden="true">🔌</span>
-                        <p>No advanced settings available for this device type.</p>
+                        <p>No advanced settings available.</p>
                     </div>
                 </div>
-
             </div>
             <div class="panel-footer">
                 <button class="primary-btn btn-on panel-save-btn" onclick="savePanelSettings()">Save Settings</button>
@@ -279,7 +274,7 @@
         </div>
     </div>
 
-    <script src="/static/js/main.js?v=3"></script>
+    <script src="/static/js/main.js?v=4"></script>
 </body>
 
 </html>

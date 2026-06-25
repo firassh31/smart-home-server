@@ -13,6 +13,7 @@ import {
 
 const router = express.Router();
 
+router.use(verifyToken);
 // --- THE MAP ---
 router.get('/types', getDeviceTypes);
 router.get('/', getDevices);

@@ -27,13 +27,12 @@ const getSafeId = (id) => {
 // READ (GET): Fetch all devices
 export const getDevices = async (req, res) => {
     try {
-        const db = await getDB(); // Grab our connected database!
-        let filter = {};
+        const db = getDB(); // Grab our connected database!
+        let filter = { familyId: req.user.familyId || req.user.id };
         if (req.user.role === 'child') {
-            filter = { childAccess: true };
-        }                          // This ensures that children can only see devices they are allowed to access
-        const devices = await db.collection("devices").find({}).toArray();
-
+            filter.childAccess = true;
+        }                 // This ensures that children can only see devices they are allowed to access
+        const devices = await db.collection("devices").find(filter).toArray();
         // Format the MongoDB _id to match the frontend requirements
         const formattedDevices = devices.map(device => ({
             ...device,
@@ -49,7 +48,7 @@ export const getDevices = async (req, res) => {
 // UPDATE (PUT): Change device status
 export const updateDeviceStatus = async (req, res) => {
     try {
-        const db = await getDB();
+        const db = getDB();
         const id = req.params.id;
         const newStatus = req.body.status;
 
@@ -81,7 +80,7 @@ export const updateDeviceStatus = async (req, res) => {
 // CREATE (POST): Add a new smart device
 export const addDevice = async (req, res) => {
     try {
-        const db = await getDB();
+        const db = getDB();
         const { name, room, type } = req.body;
         const deviceType = type.toLowerCase();
         let defaultState = {};
@@ -93,12 +92,14 @@ export const addDevice = async (req, res) => {
             defaultState = { is_locked: false };
         }
         const newDevice = {
+            id: Date.now().toString(),
             name: name,
             room: room,
             type: deviceType,
             status: 'off',
             state: defaultState,
-            childAccess: req.body.childAccess || false
+            childAccess: req.body.childAccess || false,
+            familyId: req.user.familyId || req.user.id
         };
 
         const result = await db.collection("devices").insertOne(newDevice);
@@ -116,7 +117,7 @@ export const addDevice = async (req, res) => {
 // DELETE: Remove a device
 export const deleteDevice = async (req, res) => {
     try {
-        const db = await getDB();
+        const db = getDB();
         const id = req.params.id;
         const safeId = getSafeId(id);
         const result = await db.collection('devices').deleteOne({ _id: safeId });
@@ -133,7 +134,7 @@ export const deleteDevice = async (req, res) => {
 // EDIT DEVICE (PUT): Change device name, room, or type
 export const editDevice = async (req, res) => {
     try {
-        const db = await getDB();
+        const db = getDB();
         const { id } = req.params;
 
         // Grab the updated text from the Add/Edit Modal
@@ -155,7 +156,7 @@ export const editDevice = async (req, res) => {
 // UPDATE STATE (For Brightness Sliders and AC Temp!)
 export const updateDeviceState = async (req, res) => {
     try {
-        const db = await getDB();
+        const db = getDB();
         const { id } = req.params;
         const stateUpdates = req.body; // Grabs { state.brightness: 50 } or { state.temperature: 22 } or { state.is_locked: true }
         const formattedUpdates = {};

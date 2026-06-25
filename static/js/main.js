@@ -62,7 +62,7 @@ const getAuthHeaders = () => ({
 
 const loadDeviceTypes = async () => {
     try {
-        const res = await fetch(API_URL + '/types', { headers: { 'Authorization': `Bearer ${localStorage.getItem('mshome_token')}` } });
+        const res = await fetch(API_URL + '/types', { headers: getAuthHeaders() });
         if (!res.ok) throw new Error();
         const types = await res.json();
         el.deviceType.innerHTML = types.map(t => `<option value="${t.value}">${t.label}</option>`).join('');
@@ -73,12 +73,21 @@ const loadDeviceTypes = async () => {
 
 const loadDevices = async () => {
     try {
-        const res = await fetch(API_URL, { headers: { 'Authorization': `Bearer ${localStorage.getItem('mshome_token')}` } });
+        const res = await fetch(API_URL, { headers: getAuthHeaders() });
+
+        // KICK INVALID TOKENS OUT
+        if (res.status === 401 || res.status === 403) {
+            window.logout();
+            return;
+        }
+
         if (!res.ok) throw new Error();
         devices = await res.json();
         renderUI();
     } catch {
-        showToast('Error connecting to server', 'error');
+        if (el.deviceList) {
+            el.deviceList.innerHTML = `<div class="empty-state device-grid__full"><div class="empty-icon">⚠️</div><p>Failed to load devices.</p></div>`;
+        }
     }
 };
 
@@ -95,16 +104,26 @@ const updateActiveBadges = () => {
 /* --- ENFORCE PARENT/CHILD UI RULES --- */
 const applyRolePermissions = () => {
     const role = localStorage.getItem('mshome_role');
+    const code = localStorage.getItem('mshome_code'); // GRAB CODE FROM MEMORY
+
     const addBtnDesktop = document.querySelector('.desktop-add-btn');
     const addBtnMobile = document.querySelector('.fab-btn');
+    const codeDisplay = document.getElementById('family-code-display');
+    const codeVal = document.getElementById('family-code-val');
 
-    // Physically hide Add buttons if it's a child
     if (role === 'child') {
         if (addBtnDesktop) addBtnDesktop.style.display = 'none';
         if (addBtnMobile) addBtnMobile.style.display = 'none';
+        if (codeDisplay) codeDisplay.classList.add('hidden');
     } else {
         if (addBtnDesktop) addBtnDesktop.style.display = 'flex';
         if (addBtnMobile) addBtnMobile.style.display = 'flex';
+
+        // ONLY SHOW CODE IF IT EXISTS AND IS VALID
+        if (codeDisplay && code && code !== 'undefined' && code !== 'null' && code !== '') {
+            codeDisplay.classList.remove('hidden');
+            codeVal.textContent = code;
+        }
     }
 };
 
@@ -196,7 +215,6 @@ const saveDevice = async () => {
     const room = el.deviceRoom.value.trim();
     const type = el.deviceType.value;
 
-    // Grab the child access checkbox!
     const childAccessEl = document.getElementById('device-child-access');
     const childAccess = childAccessEl ? childAccessEl.checked : false;
 
@@ -209,7 +227,7 @@ const saveDevice = async () => {
         const res = await fetch(url, {
             method,
             headers: getAuthHeaders(),
-            body: JSON.stringify({ name, room, type, childAccess }), // Send childAccess to backend
+            body: JSON.stringify({ name, room, type, childAccess }),
         });
         if (!res.ok) throw new Error();
         closeAddModal();
@@ -228,7 +246,7 @@ const confirmDelete = async () => {
     try {
         const res = await fetch(`${API_URL}/${el.deleteIdField.value}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('mshome_token')}` }
+            headers: getAuthHeaders()
         });
         if (!res.ok) throw new Error();
         closeModal();
@@ -249,14 +267,14 @@ const openDeleteModal = id => {
 
 const closeModal = () => closeModalById('deleteModal');
 
-const openAddModal = () => {
+const openAddModal = async () => {
+    await loadDeviceTypes();
     el.modalTitle.textContent = 'Add New Device';
     el.editingId.value = '';
     el.deviceName.value = '';
     el.deviceRoom.value = '';
     el.deviceType.value = 'light';
 
-    // Reset Checkbox
     const childAccessEl = document.getElementById('device-child-access');
     if (childAccessEl) childAccessEl.checked = false;
 
@@ -266,16 +284,18 @@ const openAddModal = () => {
 
 const closeAddModal = () => closeModalById('addModal');
 
-const editDevice = id => {
+const editDevice = async (id) => {
     const d = devices.find(x => x.id === id);
     if (!d) return;
+
+    await loadDeviceTypes();
+
     el.modalTitle.textContent = 'Edit Device';
     el.editingId.value = d.id;
     el.deviceName.value = d.name;
     el.deviceRoom.value = d.room || '';
     el.deviceType.value = d.type;
 
-    // Load existing Checkbox status
     const childAccessEl = document.getElementById('device-child-access');
     if (childAccessEl) childAccessEl.checked = d.childAccess || false;
 
@@ -530,13 +550,12 @@ const setupListeners = () => {
     const nameGroup = document.getElementById('auth-name-group');
     const roleGroup = document.getElementById('auth-role-group');
     const emailGroup = document.getElementById('auth-email-group');
-    const parentGroup = document.getElementById('auth-parent-group'); // NEW
-    const roleSelect = document.getElementById('auth-role'); // NEW
+    const parentGroup = document.getElementById('auth-parent-group');
+    const roleSelect = document.getElementById('auth-role');
 
     let isLoginMode = true;
 
     if (authForm) {
-        // Show/Hide Parent input based on dropdown selection
         roleSelect.addEventListener('change', (e) => {
             if (e.target.value === 'child' && !isLoginMode) {
                 parentGroup.classList.remove('hidden');
@@ -575,13 +594,15 @@ const setupListeners = () => {
             const name = document.getElementById('auth-name').value.trim();
             const password = document.getElementById('auth-password').value.trim();
             const role = roleSelect.value;
-            const parentName = document.getElementById('auth-parent').value.trim();
+
+            const codeInput = document.getElementById('auth-family-code');
+            const familyCode = codeInput ? codeInput.value.trim().toUpperCase() : '';
 
             authMessage.className = 'auth-msg-text error';
 
             if (!name || !password) return authMessage.textContent = "Error: Fill all fields.";
-            if (!isLoginMode && role === 'child' && !parentName) {
-                return authMessage.textContent = "Error: Child accounts must enter their Parent's Username.";
+            if (!isLoginMode && role === 'child' && !familyCode) {
+                return authMessage.textContent = "Error: Child accounts must enter the 6-digit Family Code.";
             }
 
             let payload;
@@ -591,7 +612,7 @@ const setupListeners = () => {
                 const email = document.getElementById('auth-email').value.trim();
                 if (!email) return authMessage.textContent = "Error: Email is required to register.";
                 if (password.length < 6) return authMessage.textContent = "Error: Password must be at least 6 characters.";
-                payload = { name, email, password, role, parentName }; // Send Parent Name!
+                payload = { name, email, password, role, familyCode };
             }
 
             const endpoint = isLoginMode ? '/auth/login' : '/auth/register';
@@ -609,8 +630,10 @@ const setupListeners = () => {
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Authentication failed');
 
+                // ✅ THE MISSING PIECE IS RIGHT HERE! WE SAVE THE CODE!
                 localStorage.setItem('mshome_token', data.token);
                 localStorage.setItem('mshome_role', data.role);
+                localStorage.setItem('mshome_code', data.familyCode || '');
 
                 authMessage.className = 'auth-msg-text success';
                 authMessage.textContent = data.message;
@@ -623,13 +646,14 @@ const setupListeners = () => {
                 }, 1000);
 
             } catch (error) {
-                authMessage.textContent = "Error: " + error.message;
+                authMessage.innerHTML = `<strong>❌ ${error.message}</strong>`;
             } finally {
                 authSubmitBtn.textContent = isLoginMode ? 'Sign In' : 'Create Account';
                 authSubmitBtn.disabled = false;
             }
         });
     }
+
     document.addEventListener('click', onDocumentClick);
 
     el.brightnessSlider.addEventListener('input', e => {
@@ -685,27 +709,23 @@ window.savePanelSettings = savePanelSettings;
 window.profile = () => { };
 window.settings = () => { };
 window.logout = () => {
-    // TRUE LOGOUT: Erases memory and reloads the page to lock it!
-    localStorage.removeItem('mshome_token');
-    localStorage.removeItem('mshome_role');
+    localStorage.clear();
     window.location.reload();
 };
 
 window.addEventListener('DOMContentLoaded', () => {
     setupListeners();
 
-    // Check if user is logged in
     const token = localStorage.getItem('mshome_token');
     const authPage = document.getElementById('auth-page');
 
-    if (token) {
-        // Logged in: Hide auth screen and load devices!
+    if (token && token !== 'undefined' && token !== 'null') {
         if (authPage) authPage.classList.add('hidden');
         applyRolePermissions();
         loadDevices();
         loadDeviceTypes();
     } else {
-        // Not logged in: Ensure auth screen is visible
+        localStorage.clear();
         if (authPage) authPage.classList.remove('hidden');
     }
 });
