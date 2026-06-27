@@ -138,7 +138,7 @@ export const editDevice = async (req, res) => {
         const { id } = req.params;
 
         // Grab the updated text from the Add/Edit Modal
-        const { name, room, type } = req.body;
+        const { name, room, type, childAccess } = req.body;
 
         const safeId = getSafeId(id);
         await db.collection('devices').updateOne(
