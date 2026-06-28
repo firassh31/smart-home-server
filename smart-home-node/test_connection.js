@@ -1,29 +1,28 @@
-require('dotenv').config(); // טעינת המשתנים מהקובץ .env
-const { MongoClient } = require('mongodb');
+import 'dotenv/config';
+import { MongoClient } from 'mongodb';
 
+// Manual smoke test for MongoDB connectivity outside the Express server.
 async function testConnection() {
-    const uri = process.env.MONGODB_URI;
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
     const client = new MongoClient(uri);
 
     try {
-        // connect to MongoDB
         await client.connect();
-        console.log("✅ Connected to MongoDB via Node.js!");
-        // database and collection references
-        const database = client.db("smart_home_db");
+        console.log("Connected to MongoDB via Node.js.");
+
+        // Reads one device document to verify connection and collection access.
+        const database = client.db("SmartHomeDB");
         const collection = database.collection("devices");
-        // fetch one device document to verify connection and data access
         const device = await collection.findOne({});
 
         if (device) {
-            console.log("👀 Node.js found a device :");
+            console.log("Node.js found a device:");
             console.log(device);
         } else {
-            console.log("🤷‍♂️ Connected, but no devices found.");
+            console.log("Connected, but no devices found.");
         }
-
     } catch (e) {
-        console.error("❌ Error:", e);
+        console.error("Connection test error:", e);
     } finally {
         await client.close();
     }

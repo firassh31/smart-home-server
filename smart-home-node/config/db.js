@@ -1,37 +1,31 @@
 import { MongoClient } from 'mongodb';
 import 'dotenv/config';
-// Load environment variables from .env file
+
 const uri = process.env.MONGO_URI;
-// Create a new MongoClient
 const client = new MongoClient(uri);
-// Connect to the database
 let db;
 
-// Function to connect to the database
+// Opens one MongoDB connection and reuses it for the lifetime of the server.
 export async function connectDB() {
     if (!db) {
         try {
-            // Connect to MongoDB and set the database instance
             await client.connect();
-            console.log("✅ Connected to MongoDB");
+            console.log("Connected to MongoDB");
             db = client.db("SmartHomeDB");
         } catch (error) {
-            // Handle connection errors
-            console.error("❌ Failed to connect to MongoDB", error);
+            console.error("Failed to connect to MongoDB", error);
             process.exit(1);
         }
     }
+
     return db;
 }
-// Get the database instance
+
+// Gives controllers access to the established database connection.
 export function getDB() {
     if (!db) {
         throw new Error("Database not connected. Call connectDB() first.");
     }
-    // Return the connected database instance
+
     return db;
 }
-
-
-
-

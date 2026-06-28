@@ -2,14 +2,13 @@ import { getDB } from '../config/db.js';
 import { ObjectId } from 'mongodb';
 import { deviceManager } from '../services/DeviceManager.js';
 
-
-// GET DEVICE TYPES (Fulfills the dynamic select requirement)
+// Device type catalog used by the add/edit form.
 export const getDeviceTypes = (req, res) => {
     try {
         const types = [
-            { value: 'light', label: '💡 Light' },
-            { value: 'ac', label: '❄️ AC' },
-            { value: 'doorlock', label: '🔒 Door Lock' }
+            { value: 'light', label: 'Light' },
+            { value: 'ac', label: 'AC' },
+            { value: 'doorlock', label: 'Door Lock' }
         ];
         res.status(200).json(types);
     } catch (error) {
@@ -17,6 +16,7 @@ export const getDeviceTypes = (req, res) => {
     }
 };
 
+// Accepts either MongoDB ObjectIds or legacy string ids without throwing.
 const getSafeId = (id) => {
     try {
         return ObjectId.isValid(id) ? new ObjectId(id) : id;
@@ -24,20 +24,22 @@ const getSafeId = (id) => {
         return id;
     }
 };
-// READ (GET): Fetch all devices
+
+// Fetches all devices visible to the authenticated user's family and role.
 export const getDevices = async (req, res) => {
     try {
-        const db = getDB(); // Grab our connected database!
-        let filter = { familyId: req.user.familyId || req.user.id };
+        const db = getDB();
+        const filter = { familyId: req.user.familyId || req.user.id };
         if (req.user.role === 'child') {
             filter.childAccess = true;
-        }                 // This ensures that children can only see devices they are allowed to access
+        }
+
         const devices = await db.collection("devices").find(filter).toArray();
-        // Format the MongoDB _id to match the frontend requirements
         const formattedDevices = devices.map(device => ({
             ...device,
             id: device._id.toString()
         }));
+
         res.status(200).json(formattedDevices);
     } catch (error) {
         console.error("Error fetching devices:", error);
@@ -45,17 +47,17 @@ export const getDevices = async (req, res) => {
     }
 };
 
-// UPDATE (PUT): Change device status
+// Updates the on/off status and broadcasts the change to observers.
 export const updateDeviceStatus = async (req, res) => {
     try {
         const db = getDB();
         const id = req.params.id;
         const newStatus = req.body.status;
 
-        // Strict Validation (Protecting the DB)
         if (!['on', 'off'].includes(newStatus)) {
             return res.status(400).json({ error: "Invalid status. Must be 'on' or 'off'." });
         }
+
         const safeId = getSafeId(id);
         const result = await db.collection('devices').updateOne(
             { _id: safeId },
@@ -66,24 +68,22 @@ export const updateDeviceStatus = async (req, res) => {
             return res.status(404).json({ error: "Device not found" });
         }
 
-        // We tell our Singleton to broadcast this exact change to all Observers!
         deviceManager.notifyObservers(id, newStatus);
-
         res.status(200).json({ message: "Updated", status: newStatus });
-
     } catch (error) {
         console.error("Error updating device:", error);
         res.status(500).json({ error: "Update failed or Invalid ID format" });
     }
 };
 
-// CREATE (POST): Add a new smart device
+// Creates a new device with a default state shape for its type.
 export const addDevice = async (req, res) => {
     try {
         const db = getDB();
         const { name, room, type } = req.body;
         const deviceType = type.toLowerCase();
         let defaultState = {};
+
         if (deviceType === 'light') {
             defaultState = { brightness: 10 };
         } else if (deviceType === 'ac') {
@@ -91,10 +91,11 @@ export const addDevice = async (req, res) => {
         } else if (deviceType === 'doorlock') {
             defaultState = { is_locked: false };
         }
+
         const newDevice = {
             id: Date.now().toString(),
-            name: name,
-            room: room,
+            name,
+            room,
             type: deviceType,
             status: 'off',
             state: defaultState,
@@ -103,24 +104,21 @@ export const addDevice = async (req, res) => {
         };
 
         const result = await db.collection("devices").insertOne(newDevice);
-
-        res.status(201).json({
-            message: "Device added!",
-            id: result.insertedId.toString(),
-        });
+        res.status(201).json({ message: "Device added!", id: result.insertedId.toString() });
     } catch (error) {
-        console.error("❌ ADD ERROR:", error);
+        console.error("Add device error:", error);
         res.status(500).json({ error: "Failed to add device" });
     }
 };
 
-// DELETE: Remove a device
+// Removes a device owned by the parent account.
 export const deleteDevice = async (req, res) => {
     try {
         const db = getDB();
         const id = req.params.id;
         const safeId = getSafeId(id);
         const result = await db.collection('devices').deleteOne({ _id: safeId });
+
         if (result.deletedCount === 1) {
             res.status(200).json({ message: "Deleted successfully" });
         } else {
@@ -131,16 +129,15 @@ export const deleteDevice = async (req, res) => {
         res.status(500).json({ error: "Invalid ID format or delete failed" });
     }
 };
-// EDIT DEVICE (PUT): Change device name, room, or type
+
+// Updates device metadata controlled by the add/edit form.
 export const editDevice = async (req, res) => {
     try {
         const db = getDB();
         const { id } = req.params;
-
-        // Grab the updated text from the Add/Edit Modal
         const { name, room, type, childAccess } = req.body;
-
         const safeId = getSafeId(id);
+
         await db.collection('devices').updateOne(
             { _id: safeId },
             { $set: { name, room, type, childAccess } }
@@ -148,29 +145,33 @@ export const editDevice = async (req, res) => {
 
         res.status(200).json({ message: "Device updated successfully" });
     } catch (error) {
-        console.error("❌ EDIT DEVICE ERROR:", error);
+        console.error("Edit device error:", error);
         res.status(500).json({ error: "Failed to edit device" });
     }
 };
 
-// UPDATE STATE (For Brightness Sliders and AC Temp!)
+// Updates nested device state fields such as brightness or temperature.
 export const updateDeviceState = async (req, res) => {
     try {
         const db = getDB();
         const { id } = req.params;
-        const stateUpdates = req.body; // Grabs { state.brightness: 50 } or { state.temperature: 22 } or { state.is_locked: true }
+        const stateUpdates = req.body;
         const formattedUpdates = {};
+
         for (const key in stateUpdates) {
             formattedUpdates[`state.${key}`] = stateUpdates[key];
         }
+
         const safeId = getSafeId(id);
         const result = await db.collection('devices').updateOne(
             { _id: safeId },
             { $set: formattedUpdates }
         );
+
         if (result.matchedCount === 0) {
             return res.status(404).json({ error: "Device not found" });
         }
+
         const updated = await db.collection('devices').findOne({ _id: safeId });
         res.status(200).json({ ...updated, id: updated._id.toString() });
     } catch (error) {

@@ -1,6 +1,5 @@
 import express from 'express';
 import { verifyToken, verifyParent } from '../middleware/authMiddleware.js';
-// Explicitly importing every single function so Express CANNOT get confused
 import {
     getDeviceTypes,
     getDevices,
@@ -13,14 +12,18 @@ import {
 
 const router = express.Router();
 
+// All device routes require a valid session token.
 router.use(verifyToken);
-// --- THE MAP ---
+
+// Child users can read and control allowed devices.
 router.get('/types', getDeviceTypes);
 router.get('/', getDevices);
 router.put('/:id/state', updateDeviceState);
 router.put('/:id/status', updateDeviceStatus);
 
+// Parent-only routes manage the device inventory.
 router.post('/', verifyParent, addDevice);
 router.put('/:id', verifyParent, editDevice);
 router.delete('/:id', verifyParent, deleteDevice);
+
 export default router;

@@ -1,8 +1,9 @@
-// smart-home-node/routes/authRoutes.js
 import express from 'express';
 import { register, login } from '../controllers/authController.js';
 
 const router = express.Router();
+
+// Public authentication routes.
 router.post('/register', register);
 router.post('/login', login);
 

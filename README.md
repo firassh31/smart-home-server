@@ -1,69 +1,78 @@
-# 🏠 Smart Home API (Node.js MVC Architecture)
+# Smart Home API (Node.js MVC Architecture)
 
-A professional, mobile-first Smart Home API designed for managing and monitoring IoT devices through a unified, app-like interface. The system features a high-performance Node.js (Express) backend and a state-of-the-art Vanilla JavaScript frontend, optimized with modern ES6+ standards for maximum efficiency. This dashboard utilizes a scalable MVC architecture, integrating seamless Room Navigation Pills, intelligent Auto-Iconography, and a secure Device Action Menu. Engineered with a "Native App" mindset, the platform ensures perfect responsiveness and fluid interactions across both desktop browsers and mobile devices.
-It heavily leverages the industry-standard "Device Shadow" pattern to maintain a clean, decoupled, and efficient codebase for IoT integration.
+MSHome is a desktop smart-home dashboard backed by a Node.js and Express API. It manages parent and child accounts, protected device inventory, room filtering, device status control, and device-specific state such as brightness, temperature, and lock state.
 
-## 🏗️ Architecture & Tech Stack
-* **Backend:** Node.js, Express.
+The project uses a compact MVC-style structure with controllers, routes, middleware, services, and a static HTML/CSS/JavaScript dashboard served by Express.
+
+## Architecture & Tech Stack
+
+* **Backend:** Node.js and Express.
 * **Database:** MongoDB Atlas.
-* **Frontend**: HTML5, CSS3 (Modern Design Tokens), JavaScript (ES6+).
-* **Design Patterns:** MVC (Model-View-Controller), Device Shadow (Separation of Metadata and Telemetry).
-* **Security:** `dotenv` for environment variable management, CORS policies configured for API communication.
+* **Frontend:** HTML5, CSS3, and vanilla JavaScript.
+* **Design Patterns:** MVC boundaries, role-based access control, and device shadow state.
+* **Security:** Environment variables through `dotenv`, JWT authentication, and parent-only device inventory routes.
 
-## 🚀 Recent Updates & Optimizations
-* **Node.js Migration:** Completely refactored the backend from Python/Flask to an asynchronous Node.js/Express environment.
-* **Device Shadow Architecture:** Separated device identity (name, room) from telemetry (brightness, temperature) into a nested `state` object.
-* **Query Optimization:** Replaced $O(N)$ collection scans with $O(1)$ `ObjectId` lookups for CRUD operations.
-* **Database Indexing:** Implemented a B-tree index on the `room` field to drastically speed up sorting and data grouping at the database level.
-* **Segmented Room Navigation**: Replaced bulky headers with a sleek, horizontal-scrolling "Pill" menu.
-* **Dynamic Tile Layout**: Redesigned device cards into perfect squares with automatic iconography (📺, 💡, ❄️) based on device names.
-* **Kebab Menu (Three Dots)**: Improved UI by moving secondary actions (Edit/Delete) into a scoped dropdown menu.
-* **Native App Optimization**: Added mobile-first behaviors, including touch-highlight removal and overscroll prevention for an "app-like" feel.
-* **Code Refactor**: Optimized both CSS and JS files for performance, using modern ES6+ standards and DRY principles.
+## Features
 
-## 🛠️ Features
-- **Real-time Filtering**: Instantly filter devices by room without page reloads.
-- **Interactive Toggles & Sliders**: Modern, animated ON/OFF switches and precise state controls for all smart devices.
-- **Smart Factory Defaults**: Automatically provisions exact required telemetry fields (e.g., `brightness: 10`, `temperature: 22`) upon device creation.
-- **Global Status Badge**: A sticky header showing the total count of active devices at a glance.
-- **Smart Auto-Icons**: Intelligent name-matching logic that assigns relevant emojis to devices automatically.
+* **Authentication:** Parent and child account flows with JWT sessions.
+* **Family Access:** Parent accounts receive a family invite code; child accounts can join with that code.
+* **Role-Based UI:** Child accounts can only see allowed devices and cannot manage inventory.
+* **Room Filtering:** Devices can be filtered by room without reloading the page.
+* **Device Controls:** On/off controls, brightness, AC temperature, and door lock state.
+* **Weather Widget:** Uses a server-side proxy so the weather API key stays private.
 
----
+## Project Structure
 
-## ⚙️ How to Run the Project
-
-### 1. Prerequisites
-* Node.js (v18+ recommended) installed
-* A MongoDB Atlas Cluster (Free Tier is sufficient)
-
-### 2. Installation & Setup
-Clone the repository and navigate into the project folder:
-```bash
-git clone [https://github.com/firassh31/Smart_home_api.git](https://github.com/firassh31/Smart_home_api.git)
+```text
+smart-home-node/
+  config/              MongoDB connection
+  controllers/         Auth and device request handlers
+  middleware/          JWT and role checks
+  routes/              Express route definitions
+  services/            Device observer registry
+  server.js            Express startup and frontend serving
+static/
+  css/style.css        Dashboard styling
+  js/main.js           Dashboard behavior
+templates/
+  index.html           Dashboard markup
 ```
 
-Environment Variables (Important!)
-Install the required Node.js dependencies:
-``` Bash
-npm install
+## Environment Variables
 
-For security, database credentials are not tracked in version control. You must create a .env file in the root directory of the project and add your MongoDB connection string:
+Create a `.env` file in `smart-home-node/` with:
 
+```bash
 MONGO_URI="mongodb+srv://<username>:<password>@<your-cluster-address>/?retryWrites=true&w=majority"
+JWT_SECRET="replace-with-a-long-random-secret"
+WEATHER_API_KEY="your-openweathermap-key"
 PORT=3000
 ```
-### 3. start the server
-```
+
+## Run The Project
+
+```bash
 cd smart-home-node
-node server.js
+npm install
+npm start
 ```
 
-## 📡 4. API Endpoints
+Then open:
 
-| HTTP Method | Endpoint | Description |
+```text
+http://localhost:3000
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| **GET** | `/devices/` | Fetches a list of all devices, including their nested state data. |
-| **POST** | `/devices/` | Creates a new smart device, automatically generating its default `state` folder. |
-| **PUT** | `/devices/<id>/status` | Toggles the operational status (on/off) of a specific device. |
-| **PUT** | `/devices/<id>/state` | Updates specific telemetry data inside the nested Device Shadow (e.g., `{ "brightness": 75 }`). |
-| **DELETE** | `/devices/<id>` | Permanently removes a device using its MongoDB ObjectId. |
+| `POST` | `/auth/register` | Creates a parent account or child account. |
+| `POST` | `/auth/login` | Authenticates a user and returns a JWT. |
+| `GET` | `/devices/types` | Returns supported device types. |
+| `GET` | `/devices/` | Fetches devices visible to the current user. |
+| `POST` | `/devices/` | Creates a new device. Parent only. |
+| `PUT` | `/devices/:id` | Updates device metadata. Parent only. |
+| `PUT` | `/devices/:id/status` | Updates device on/off status. |
+| `PUT` | `/devices/:id/state` | Updates nested device state fields. |
+| `DELETE` | `/devices/:id` | Deletes a device. Parent only. |

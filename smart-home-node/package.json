@@ -1,12 +1,17 @@
 {
   "name": "smart-home-node",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Node.js and Express backend for the MSHome smart home dashboard.",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "test:connection": "node test_connection.js"
   },
-  "keywords": [],
+  "keywords": [
+    "smart-home",
+    "express",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MSHome</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
@@ -11,9 +11,9 @@
 <body>
     <div id="auth-page" class="auth-overlay">
         <div class="modal-content auth-box">
-            <div class="sidebar-logo auth-logo">
-                <span class="sidebar-logo-icon">🏠</span>
-                <span class="sidebar-logo-text auth-logo-text">MSHome</span>
+            <div class="auth-logo">
+                <span class="brand-mark">MS</span>
+                <span class="brand-text">MSHome</span>
             </div>
             <h3>Create Account / Login</h3>
             <p class="modal-subtitle">Manage your smart devices securely.</p>
@@ -31,8 +31,7 @@
                 </div>
                 <div class="input-group hidden" id="auth-parent-group">
                     <label for="auth-family-code">Family Invite Code</label>
-                    <input type="text" id="auth-family-code" placeholder="e.g. X7B9Q2"
-                        style="text-transform: uppercase;">
+                    <input type="text" id="auth-family-code" placeholder="e.g. X7B9Q2">
                 </div>
                 <div class="input-group hidden" id="auth-email-group">
                     <label for="auth-email">Email Address</label>
@@ -52,47 +51,23 @@
         </div>
     </div>
 
-    <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
-    <aside id="sidebar" class="sidebar" aria-label="Main menu">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <span class="sidebar-logo-icon">🏠</span>
-                <span class="sidebar-logo-text">MSHome</span>
-            </div>
-            <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
-        </div>
-
-        <div id="family-code-display" class="hidden code-display-box sidebar-code-display" onclick="copyFamilyCode()"
-            title="Click to copy invite code">
-            <div class="sidebar-code-label">Family Code</div>
-            <div class="sidebar-code-wrapper">
-                <div id="family-code-val" class="sidebar-code-value">------</div>
-                <span class="code-copy-icon">📋</span>
-            </div>
-        </div>
-
-        <nav class="sidebar-nav">
-            <button class="nav-item" onclick="profile()"><span class="nav-icon">👤</span>Profile</button>
-            <button class="nav-item" onclick="settings()"><span class="nav-icon">⚙️</span>Settings</button>
-            <button class="nav-item nav-item--danger" onclick="logout()"><span class="nav-icon">🚪</span>Logout</button>
-        </nav>
-        <div class="sidebar-footer">MSHome v1.0</div>
-    </aside>
-
     <header class="desktop-navbar">
         <div class="desktop-navbar-inner">
             <div class="navbar-brand">
-                <span class="navbar-logo-icon">🏠</span>
-                <span class="navbar-logo-text">MSHome</span>
+                <span class="brand-mark">MS</span>
+                <span class="brand-text">MSHome</span>
                 <span class="navbar-divider"></span>
                 <span class="navbar-subtitle">Smart Control</span>
             </div>
-            <nav class="navbar-links">
+            <nav class="navbar-links" aria-label="Main navigation">
                 <button class="navbar-link navbar-link--active">Dashboard</button>
-                <button class="navbar-link" onclick="profile()">Profile</button>
-                <button class="navbar-link" onclick="settings()">Settings</button>
             </nav>
             <div class="navbar-right">
+                <div id="weather-widget" class="weather-widget" title="Current Weather in Haifa">
+                    <span id="weather-icon" class="weather-icon">...</span>
+                    <span id="weather-temp" class="weather-temp">--&deg;C</span>
+                    <span id="weather-desc" class="weather-desc">Loading...</span>
+                </div>
                 <div class="status-badge">
                     <span class="status-dot"></span>
                     <span id="active-count-desktop">0</span>&nbsp;Active
@@ -102,58 +77,40 @@
         </div>
     </header>
 
-    <div class="app-shell">
-        <header class="main-header mobile-only">
-            <div class="header-content">
-                <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">
-                    <span class="hamburger-icon">
-                        <span></span><span></span><span></span>
-                    </span>
-                </button>
-                <div class="header-brand">
-                    <h1>MSHome</h1>
-                    <span class="header-subtitle">Smart Control</span>
-                </div>
-                <div class="status-badge">
-                    <span class="status-dot"></span>
-                    <span id="active-count">0</span>&nbsp;Active
+    <div class="desktop-hero">
+        <div class="desktop-hero-inner">
+            <div class="hero-text">
+                <h2 class="hero-title">Welcome back</h2>
+                <p class="hero-sub">Monitor and control all your smart devices from one place.</p>
+                <div id="desktop-family-code" class="hidden code-display-box desktop-code-display"
+                    onclick="copyFamilyCode()" title="Click to copy invite code">
+                    <span class="desktop-code-label">Family Invite Code:</span>
+                    <strong id="desktop-code-val" class="desktop-code-value">------</strong>
+                    <span class="code-copy-icon">Copy</span>
                 </div>
             </div>
-        </header>
-
-        <div class="desktop-hero desktop-only">
-            <div class="desktop-hero-inner">
-                <div class="hero-text">
-                    <h2 class="hero-title">Welcome back 👋</h2>
-                    <p class="hero-sub">Monitor and control all your smart devices from one place.</p>
-                    <div id="desktop-family-code" class="hidden code-display-box desktop-code-display"
-                        onclick="copyFamilyCode()" title="Click to copy invite code">
-                        <span class="desktop-code-label">Family Invite Code:</span>
-                        <strong id="desktop-code-val" class="desktop-code-value">------</strong>
-                        <span class="code-copy-icon">📋</span>
-                    </div>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-total">0</span>
+                    <span class="stat-label">Total Devices</span>
                 </div>
-                <div class="hero-stats">
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-total">0</span>
-                        <span class="stat-label">Total Devices</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value accent" id="stat-on">0</span>
-                        <span class="stat-label">Active Now</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-value" id="stat-rooms">0</span>
-                        <span class="stat-label">Rooms</span>
-                    </div>
+                <div class="stat-card">
+                    <span class="stat-value accent" id="stat-on">0</span>
+                    <span class="stat-label">Active Now</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="stat-rooms">0</span>
+                    <span class="stat-label">Rooms</span>
                 </div>
             </div>
         </div>
+    </div>
 
+    <div class="app-shell">
         <main class="content-wrapper">
             <div class="room-nav-row">
                 <div id="room-nav" class="room-nav-container"></div>
-                <button class="desktop-add-btn desktop-only" onclick="openAddModal()">＋ Add Device</button>
+                <button class="desktop-add-btn" onclick="openAddModal()">+ Add Device</button>
             </div>
             <div class="section-header">
                 <h2 class="section-title">Devices</h2>
@@ -161,13 +118,12 @@
             <div id="deviceList" class="device-grid">
                 <div class="loading-state device-grid__full">
                     <div class="loading-spinner" aria-hidden="true"></div>
-                    <p>Loading devices…</p>
+                    <p>Loading devices...</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <button type="button" class="fab-btn mobile-only" onclick="openAddModal()" aria-label="Add device">+</button>
     <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <div id="deleteModal" class="modal" role="dialog" aria-modal="true">
@@ -202,7 +158,7 @@
                 <label for="device-room">Room</label>
                 <input type="text" id="device-room" placeholder="e.g. Bedroom" autocomplete="off">
             </div>
-            <div class="input-group" id="child-access-wrapper">
+            <div class="input-group checkbox-group" id="child-access-wrapper">
                 <input type="checkbox" id="device-child-access">
                 <label for="device-child-access" class="checkbox-label">Allow Child Access</label>
             </div>
@@ -213,13 +169,11 @@
         </div>
     </div>
 
-    <div id="deviceControlPanel" class="slide-up-panel" role="dialog" aria-modal="true">
+    <div id="deviceControlPanel" class="control-panel" role="dialog" aria-modal="true">
         <div class="panel-inner">
             <div class="panel-header">
-                <button class="back-btn" onclick="closeDeviceControl()">← Back</button>
+                <button class="back-btn" onclick="closeDeviceControl()">&larr; Back</button>
                 <h2 id="control-device-name">Device</h2>
-            </div>
-            <div class="panel-header-actions">
                 <button id="panel-status-toggle" class="toggle-btn btn-off" type="button">OFF</button>
             </div>
             <div class="panel-content">
@@ -248,12 +202,12 @@
                             <h3>Temperature</h3>
                         </div>
                         <div class="ac-dial-wrap">
-                            <span class="ac-range-label ac-range-label-left">16°C</span>
-                            <span class="ac-range-label ac-range-label-right">30°C</span>
+                            <span class="ac-range-label ac-range-label-left">16&deg;C</span>
+                            <span class="ac-range-label ac-range-label-right">30&deg;C</span>
                             <div class="ac-dial" id="ac-dial">
                                 <div class="ac-dial-ticks" id="ac-dial-ticks"></div>
                                 <div class="ac-dial-center">
-                                    <span class="temp-display">22</span><sup>°C</sup>
+                                    <span class="temp-display">22</span><sup>&deg;C</sup>
                                 </div>
                                 <button type="button" class="ac-dial-knob" id="ac-dial-knob"></button>
                             </div>
@@ -271,7 +225,7 @@
                 </div>
                 <div id="panel-unknown" class="device-panel hidden">
                     <div class="settings-group empty-panel-msg">
-                        <span class="empty-panel-icon" aria-hidden="true">🔌</span>
+                        <span class="empty-panel-icon" aria-hidden="true">--</span>
                         <p>No advanced settings available.</p>
                     </div>
                 </div>
@@ -282,7 +236,7 @@
         </div>
     </div>
 
-    <script src="/static/js/main.js?v=4"></script>
+    <script src="/static/js/main.js?v=5"></script>
 </body>
 
 </html>
