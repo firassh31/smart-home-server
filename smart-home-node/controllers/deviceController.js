@@ -117,6 +117,11 @@ export const addDevice = async (req, res) => {
     try {
         const db = getDB();
         const { name, room, type } = req.body;
+        // device validation: name, room, and type are required fields. If any are missing, return a 400 error.
+        if (!name || !room || !type) {
+            return res.status(400).json({ error: "Missing required fields. Name, room, and type are mandatory." });
+        }
+
         const deviceType = type.toLowerCase();
         let defaultState = {};
 
