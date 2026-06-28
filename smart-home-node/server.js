@@ -8,7 +8,7 @@ import { connectDB } from './config/db.js';
 import deviceRoutes from './routes/deviceRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,10 +20,8 @@ app.use(express.json());
 // Public auth endpoints are mounted before protected device routes.
 app.use('/auth', authRoutes);
 
-// Serve the dashboard and static assets from the project root.
-app.use('/static', express.static(path.join(__dirname, '../static')));
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../templates/index.html'));
+    res.status(200).send('MSHome API is live and running!');
 });
 
 // Device endpoints enforce JWT and role checks inside the router.
