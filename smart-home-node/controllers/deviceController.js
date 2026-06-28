@@ -29,12 +29,19 @@ const getSafeId = (id) => {
 export const getDevices = async (req, res) => {
     try {
         const db = getDB();
+
+        const { room } = req.query;
+
         const filter = { familyId: req.user.familyId || req.user.id };
         if (req.user.role === 'child') {
             filter.childAccess = true;
         }
+        if (room && room !== 'All' && room !== '') {
+            filter.room = room;
+        }
 
         const devices = await db.collection("devices").find(filter).toArray();
+
         const formattedDevices = devices.map(device => ({
             ...device,
             id: device._id.toString()
@@ -44,6 +51,35 @@ export const getDevices = async (req, res) => {
     } catch (error) {
         console.error("Error fetching devices:", error);
         res.status(500).json({ error: "Failed to fetch devices" });
+    }
+};
+
+// Aggregates device counts based on their 'on' or 'off' status
+export const getDeviceStats = async (req, res) => {
+    try {
+        const db = getDB();
+
+        // 1. Enforce your existing family and role-based security
+        const filter = { familyId: req.user.familyId || req.user.id };
+        if (req.user.role === 'child') {
+            filter.childAccess = true;
+        }
+
+        // 2. Execute the Complex Aggregation Pipeline
+        const stats = await db.collection('devices').aggregate([
+            { $match: filter },          // Stage 1: Only grab devices this user is allowed to see
+            {
+                $group: {
+                    _id: "$status",          // Stage 2: Group them by their status ('on' or 'off')
+                    count: { $sum: 1 }       // Stage 3: Count how many fall into each bucket
+                }
+            }
+        ]).toArray();
+
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error("Error fetching device stats:", error);
+        res.status(500).json({ error: "Failed to fetch device stats" });
     }
 };
 
@@ -178,3 +214,5 @@ export const updateDeviceState = async (req, res) => {
         res.status(500).json({ error: "Failed to update state" });
     }
 };
+
+

@@ -3,6 +3,7 @@ import { verifyToken, verifyParent } from '../middleware/authMiddleware.js';
 import {
     getDeviceTypes,
     getDevices,
+    getDeviceStats,
     addDevice,
     updateDeviceStatus,
     deleteDevice,
@@ -18,6 +19,7 @@ router.use(verifyToken);
 // Child users can read and control allowed devices.
 router.get('/types', getDeviceTypes);
 router.get('/', getDevices);
+router.get('/stats', getDeviceStats);
 router.put('/:id/state', updateDeviceState);
 router.put('/:id/status', updateDeviceStatus);
 
