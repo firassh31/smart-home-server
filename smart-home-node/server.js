@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 // Shared middleware for browser requests and JSON API bodies.
 app.use(cors());
@@ -56,7 +56,7 @@ async function startServer() {
     try {
         await connectDB();
         app.listen(port, () => {
-            console.log(`Node.js server running on http://localhost:${port}`);
+            console.log(`Node.js server running`);
         });
     } catch (error) {
         console.error("Failed to start server:", error);

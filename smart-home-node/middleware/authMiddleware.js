@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
+const SECRET_KEY = process.env.JWT_SECRET;
 
 // Verifies the Bearer token and exposes its claims on req.user.
 export const verifyToken = (req, res, next) => {
