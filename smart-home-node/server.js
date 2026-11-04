@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import { connectDB } from './config/db.js';
 import deviceRoutes from './routes/deviceRoutes.js';
+import { ensureAuthIndexes } from './models/authModels.js';
 
 const __filename = fileURLToPath(import.meta.url);
 
@@ -54,7 +55,9 @@ app.get('/api/weather', async (req, res) => {
 // Connect to MongoDB before accepting HTTP traffic.
 async function startServer() {
     try {
-        await connectDB();
+        const db = await connectDB();
+        // Unique phone index and the OTP TTL index must exist before traffic.
+        await ensureAuthIndexes(db);
         app.listen(port, () => {
             console.log(`Node.js server running`);
         });

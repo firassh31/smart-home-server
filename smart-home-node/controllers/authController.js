@@ -1,68 +1,197 @@
-import { getDB } from '../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { getDB } from '../config/db.js';
+import { sendLoginAlertEmail, sendWelcomeEmail } from '../services/emailService.js';
+import { normalizePhone } from '../utils/phone.js';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
+const JWT_SECRET = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
+const BCRYPT_HASH_PATTERN = /^\$2[aby]\$\d{2}\$/;
 
-// Registers parent accounts or links child accounts to an existing family code.
+function normalizeUsername(value) {
+    return typeof value === 'string' ? value.trim() : '';
+}
+
+function usernameLookup(username) {
+    const escapedUsername = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const expression = new RegExp(`^\\s*${escapedUsername}\\s*$`, 'i');
+
+    // Support records created by older clients that stored `username` instead
+    // of `name`, including case and surrounding whitespace differences.
+    return {
+        $or: [
+            { name: expression },
+            { username: expression },
+        ],
+    };
+}
+
+async function verifyAndUpgradePassword(db, user, submittedPassword) {
+    const passwordField = ['password', 'passwordHash', 'hashedPassword']
+        .find((field) => typeof user[field] === 'string');
+
+    if (!passwordField) return false;
+
+    const storedPassword = user[passwordField];
+    const isBcryptHash = BCRYPT_HASH_PATTERN.test(storedPassword);
+
+    if (isBcryptHash) {
+        try {
+            return await bcrypt.compare(submittedPassword, storedPassword);
+        } catch {
+            return false;
+        }
+    }
+
+    // Some legacy records contain the original password. Verify it once and
+    // replace it with bcrypt so future logins never need a plain-text value.
+    if (storedPassword !== submittedPassword) return false;
+
+    const upgradedHash = await bcrypt.hash(submittedPassword, 12);
+    const result = await db.collection('users').updateOne(
+        { _id: user._id, [passwordField]: storedPassword },
+        { $set: { password: upgradedHash }, $unset: { [passwordField]: '' } },
+    );
+
+    return result.matchedCount === 1;
+}
+
+// Creates parent accounts or links child accounts to an existing family code.
 export const register = async (req, res) => {
     try {
         const db = getDB();
-        const { name, email, password, role, familyCode } = req.body;
+        const name = normalizeUsername(req.body?.name);
+        const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+        const phone = normalizePhone(req.body?.phone_number);
+        const password = typeof req.body?.password === 'string' ? req.body.password : '';
+        const role = req.body?.role === 'child' ? 'child' : 'parent';
+        const familyCode = typeof req.body?.familyCode === 'string'
+            ? req.body.familyCode.trim().toUpperCase()
+            : '';
 
-        const existingUser = await db.collection('users').findOne({ name });
-        if (existingUser) return res.status(400).json({ error: "Username is already taken." });
+        if (!name || !email || password.length < 6) {
+            return res.status(400).json({ error: 'Enter a username, valid email, and password with at least 6 characters.' });
+        }
+        if (!phone) {
+            return res.status(400).json({ error: 'Enter a valid phone number (e.g. +972501234567).' });
+        }
+
+        const users = db.collection('users');
+        const existingUser = await users.findOne(usernameLookup(name));
+        if (existingUser) return res.status(409).json({ error: 'Username is already taken.' });
+
+        const existingPhone = await users.findOne({ phone_number: phone });
+        if (existingPhone) return res.status(409).json({ error: 'This phone number is already registered.' });
 
         let familyId = null;
         let generatedFamilyCode = null;
 
         if (role === 'child') {
-            const parentUser = await db.collection('users').findOne({ familyCode, role: 'parent' });
-            if (!parentUser) return res.status(400).json({ error: "Invalid Family Code. Ask your parent for the 6-digit code." });
-            familyId = parentUser._id.toString();
+            const parentUser = await users.findOne({ familyCode, role: 'parent' });
+            if (!parentUser) {
+                return res.status(400).json({ error: 'Invalid Family Code. Ask your parent for the invite code.' });
+            }
+            familyId = parentUser.familyId || parentUser._id.toString();
         } else {
             generatedFamilyCode = Math.random().toString(36).substring(2, 8).toUpperCase();
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const now = new Date();
         const newUser = {
             name,
             email,
-            password: hashedPassword,
-            role: role === 'child' ? 'child' : 'parent',
+            phone_number: phone,
+            password: await bcrypt.hash(password, 12),
+            role,
             familyId,
-            familyCode: generatedFamilyCode
+            familyCode: generatedFamilyCode,
+            is_phone_verified: false,
+            is_email_verified: false,
+            createdAt: now,
+            updatedAt: now,
         };
-        const result = await db.collection('users').insertOne(newUser);
+        const result = await users.insertOne(newUser);
 
-        // Parent users own a family, so their MongoDB id becomes the family id.
-        if (role !== 'child') {
+        if (role === 'parent') {
             familyId = result.insertedId.toString();
-            await db.collection('users').updateOne({ _id: result.insertedId }, { $set: { familyId } });
+            await users.updateOne({ _id: result.insertedId }, { $set: { familyId } });
         }
 
-        const token = jwt.sign({ id: result.insertedId, role: newUser.role, familyId }, SECRET_KEY, { expiresIn: '24h' });
-        res.status(201).json({ message: "Account created successfully!", token, role: newUser.role, familyCode: generatedFamilyCode });
+        const token = jwt.sign(
+            { id: result.insertedId, role: newUser.role, familyId },
+            JWT_SECRET,
+            { expiresIn: '24h' },
+        );
+
+        // Async notification; a slow or failing mailer never blocks signup.
+        sendWelcomeEmail(email, name);
+
+        return res.status(201).json({
+            message: 'Account created successfully!',
+            token,
+            role: newUser.role,
+            familyCode: generatedFamilyCode,
+            phone_number: phone,
+            isPhoneVerified: false,
+        });
     } catch (error) {
-        res.status(500).json({ error: "Registration failed." });
+        console.error('Registration failed:', error.message);
+        return res.status(500).json({ error: 'Registration failed.' });
     }
 };
 
-// Authenticates by username and returns the role/family claims used by the API.
+// Builds a query matching the identifier as a username, email, or phone.
+function identifierLookup(identifier) {
+    const conditions = [...usernameLookup(identifier).$or];
+
+    if (identifier.includes('@')) {
+        const escaped = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        conditions.push({ email: new RegExp(`^${escaped}$`, 'i') });
+    }
+
+    const phone = normalizePhone(identifier);
+    if (phone) conditions.push({ phone_number: phone });
+
+    return { $or: conditions };
+}
+
+// Authenticates legacy and current user records and returns API JWT claims.
+// Accepts a username, email, or phone number as the login identifier.
 export const login = async (req, res) => {
     try {
         const db = getDB();
-        const { name, password } = req.body;
+        const identifier = normalizeUsername(req.body?.identifier ?? req.body?.name);
+        const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
-        const user = await db.collection('users').findOne({ name });
-        if (!user) return res.status(401).json({ error: "Invalid username or password." });
+        if (!identifier || !password) {
+            return res.status(400).json({ error: 'Enter your username, email, or phone and your password.' });
+        }
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ error: "Invalid username or password." });
+        const user = await db.collection('users').findOne(identifierLookup(identifier));
+        if (!user || !(await verifyAndUpgradePassword(db, user, password))) {
+            return res.status(401).json({ error: 'Invalid credentials.' });
+        }
 
-        const token = jwt.sign({ id: user._id, role: user.role, familyId: user.familyId }, SECRET_KEY, { expiresIn: '24h' });
-        res.status(200).json({ message: "Login successful!", token, role: user.role, familyCode: user.familyCode });
+        const role = user.role === 'child' ? 'child' : 'parent';
+        const familyId = user.familyId || (role === 'parent' ? user._id.toString() : null);
+        const token = jwt.sign(
+            { id: user._id, role, familyId },
+            JWT_SECRET,
+            { expiresIn: '24h' },
+        );
+
+        // Async security notification; never blocks the login response.
+        if (user.email) sendLoginAlertEmail(user.email, user.name || 'there');
+
+        return res.status(200).json({
+            message: 'Login successful!',
+            token,
+            role,
+            familyCode: user.familyCode || null,
+            phone_number: user.phone_number || null,
+            isPhoneVerified: user.is_phone_verified === true,
+        });
     } catch (error) {
-        res.status(500).json({ error: "Login failed." });
+        console.error('Login failed:', error.message);
+        return res.status(500).json({ error: 'Login failed.' });
     }
 };
