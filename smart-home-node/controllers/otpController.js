@@ -11,7 +11,11 @@ import {
 import { generateOtp, sendOtpSms } from '../services/smsService.js';
 import { normalizePhone } from '../utils/phone.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
+// Fail fast: a missing secret must never silently fall back to a known value.
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not set. Define it in .env (or the host environment) before starting the server.');
+}
 
 // POST /auth/send-otp { phone_number }
 // Generates a hashed 6-digit OTP, stores it with a TTL, and texts the phone.

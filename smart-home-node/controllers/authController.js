@@ -4,7 +4,11 @@ import { getDB } from '../config/db.js';
 import { sendWelcomeEmail } from '../services/emailService.js';
 import { normalizePhone } from '../utils/phone.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
+// Fail fast: a missing secret must never silently fall back to a known value.
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not set. Define it in .env (or the host environment) before starting the server.');
+}
 const BCRYPT_HASH_PATTERN = /^\$2[aby]\$\d{2}\$/;
 
 function normalizeUsername(value) {

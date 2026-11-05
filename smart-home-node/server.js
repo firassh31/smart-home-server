@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
@@ -14,12 +15,24 @@ const __filename = fileURLToPath(import.meta.url);
 const app = express();
 const port = process.env.PORT;
 
+// Render terminates TLS at its proxy; trust it so req.ip is the real client.
+app.set('trust proxy', 1);
+
 // Shared middleware for browser requests and JSON API bodies.
 app.use(cors());
 app.use(express.json());
 
+// Brute-force protection: per-IP cap on login/register/OTP attempts.
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many attempts from this device. Try again in 15 minutes.' },
+});
+
 // Public auth endpoints are mounted before protected device routes.
-app.use('/auth', authRoutes);
+app.use('/auth', authLimiter, authRoutes);
 
 app.get('/', (req, res) => {
     res.status(200).send('MSHome API is live and running!');
