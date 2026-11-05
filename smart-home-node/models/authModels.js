@@ -13,7 +13,6 @@
  *   familyId            string | null
  *   familyCode          string | null (parents only)
  *   is_phone_verified   boolean  default false, set true by /auth/verify-otp
- *   is_email_verified   boolean  default false
  *   createdAt/updatedAt Date
  *
  * otp_verifications:

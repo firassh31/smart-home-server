@@ -49,9 +49,6 @@ const wrap = (title, body) => `
         <div style="padding: 24px; color: #121212;">
             <h3 style="margin-top: 0;">${title}</h3>
             ${body}
-            <p style="color: #666666; font-size: 12px; margin-bottom: 0;">
-                If this wasn't you, please change your password immediately.
-            </p>
         </div>
     </div>`;
 
@@ -63,16 +60,5 @@ export function sendWelcomeEmail(to, name) {
         html: wrap(`Welcome, ${name}!`, `
             <p>Your MSHome account was created successfully.</p>
             <p>You can now manage your smart home devices from the mobile app or the web dashboard.</p>`),
-    });
-}
-
-// Fired after every successful login. Intentionally not awaited by callers.
-export function sendLoginAlertEmail(to, name) {
-    sendEmail({
-        to,
-        subject: 'New login to your MSHome account',
-        html: wrap(`Hi ${name},`, `
-            <p>We detected a new login to your MSHome account on
-            <strong>${new Date().toUTCString()}</strong>.</p>`),
     });
 }

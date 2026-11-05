@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { getDB } from '../config/db.js';
-import { sendLoginAlertEmail, sendWelcomeEmail } from '../services/emailService.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
 import { normalizePhone } from '../utils/phone.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mshome_super_secret_key_2025';
@@ -105,7 +105,6 @@ export const register = async (req, res) => {
             familyId,
             familyCode: generatedFamilyCode,
             is_phone_verified: false,
-            is_email_verified: false,
             createdAt: now,
             updatedAt: now,
         };
@@ -178,9 +177,6 @@ export const login = async (req, res) => {
             JWT_SECRET,
             { expiresIn: '24h' },
         );
-
-        // Async security notification; never blocks the login response.
-        if (user.email) sendLoginAlertEmail(user.email, user.name || 'there');
 
         return res.status(200).json({
             message: 'Login successful!',
