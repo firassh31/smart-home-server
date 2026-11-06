@@ -9,6 +9,9 @@ class DeviceManager {
         DeviceManager.instance = this;
     }
 
+    // Registers an observer; it must expose update(deviceId, newStatus).
+    // This is the IoT extension point: an MQTT bridge or WebSocket pusher
+    // registers here to receive every device status change.
     addObserver(observer) {
         if (typeof observer.update !== 'function') {
             console.error("failed to add Observer: Object must implement an update() method.");
@@ -18,6 +21,8 @@ class DeviceManager {
         this.observers.push(observer);
     }
 
+    // Broadcasts a status change to every observer; one failing observer
+    // never prevents the others from being notified.
     notifyObservers(deviceId, newStatus) {
         for (const observer of this.observers) {
             try {
